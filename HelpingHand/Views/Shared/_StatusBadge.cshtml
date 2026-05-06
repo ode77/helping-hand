@@ -1,0 +1,18 @@
+﻿@model HelpingHand.Models.RequestStatus
+
+@{
+    var (css, label) = Model switch
+    {
+        HelpingHand.Models.RequestStatus.Open
+            => ("bg-success", "OPEN"),
+        HelpingHand.Models.RequestStatus.Assigned
+            => ("bg-warning text-dark", "ASSIGNED"),
+        HelpingHand.Models.RequestStatus.Completed
+            => ("bg-secondary", "COMPLETED"),
+        HelpingHand.Models.RequestStatus.Cancelled
+            => ("bg-danger", "CANCELLED"),
+        _ => ("bg-light text-dark", "UNKNOWN")
+    };
+}
+
+<span class="badge @css">@label</span>

@@ -1,0 +1,59 @@
+﻿@model HelpingHand.ViewModels.CreateHelpRequestViewModel
+
+@{
+    ViewData["Title"] = "Post a Help Request";
+}
+
+<h2 class="mb-1" style="color:#1F3864;">Post a New Help Request</h2>
+<p class="text-muted mb-4">
+    Your request will appear on the Help Board for volunteers to claim.
+</p>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly"
+                 class="alert alert-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label fw-bold"></label>
+                <input asp-for="Title" class="form-control" />
+                <span asp-validation-for="Title" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CategoryId" class="form-label fw-bold"></label>
+                <select asp-for="CategoryId"
+                        asp-items="@(new SelectList(Model.Categories,
+                                                                        "CategoryId", "Name"))"
+                        class="form-select">
+                    <option value="">-- Select a category --</option>
+                </select>
+                <span asp-validation-for="CategoryId"
+                      class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label fw-bold"></label>
+                <textarea asp-for="Description"
+                          class="form-control" rows="5"></textarea>
+                <span asp-validation-for="Description"
+                      class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="PreferredDate" class="form-label fw-bold"></label>
+                <input asp-for="PreferredDate" type="date" class="form-control" />
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a asp-controller="Home" asp-action="Board"
+                   class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    Submit Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

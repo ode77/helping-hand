@@ -1,0 +1,54 @@
+﻿@model IEnumerable<HelpingHand.Models.HelpRequest>
+
+@{
+    ViewData["Title"] = "Admin Panel";
+}
+
+<div class="alert alert-warning">
+    ⚠ You are in the Admin Panel. Actions here affect all users.
+</div>
+
+<h2 class="mb-4" style="color:#1F3864;">All Requests</h2>
+
+<table class="table table-hover table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Status</th>
+            <th>Posted By</th>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td>@r.HelpRequestId</td>
+                <td>@r.Title</td>
+                <td>@r.Category?.Name</td>
+                <td>@await Html.PartialAsync("_StatusBadge", r.Status)</td>
+                <td>@r.Requester?.FullName</td>
+                <td>@r.CreatedAt.ToString("dd MMM yyyy")</td>
+                <td>
+                    <a asp-controller="HelpRequest"
+                       asp-action="Details"
+                       asp-route-id="@r.HelpRequestId"
+                       class="btn btn-outline-primary btn-sm">View</a>
+                    <form asp-action="DeleteRequest" method="post"
+                          class="d-inline ms-1">
+                        <input type="hidden" name="id"
+                               value="@r.HelpRequestId" />
+                        <button type="submit"
+                                class="btn btn-danger btn-sm"
+                                onclick="return confirm('Delete this request?')">
+                            Delete
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

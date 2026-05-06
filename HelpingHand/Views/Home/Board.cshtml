@@ -1,0 +1,64 @@
+﻿@model IEnumerable<HelpingHand.Models.HelpRequest>
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = "Help Board";
+}
+
+<h2 class="mb-4" style="color:#1F3864;">Help Board</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No open requests right now. Check back soon!</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var req in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <span class="badge bg-primary mb-1">@req.Category?.Name</span>
+                        @await Html.PartialAsync("_StatusBadge", req.Status)
+                        <h5 class="card-title mt-2">@req.Title</h5>
+                        <p class="card-text text-muted small">
+                            @(req.Description.Length > 120
+                                ? req.Description[..120] + "..."
+                                : req.Description)
+                        </p>
+                        <p class="text-muted small mb-0">
+                            By: @req.Requester?.FullName
+                            · @req.CreatedAt.ToString("dd MMM yyyy")
+                        </p>
+                    </div>
+                    <div class="card-footer bg-white border-0 pb-3">
+                        <a asp-controller="HelpRequest"
+                           asp-action="Details"
+                           asp-route-id="@req.HelpRequestId"
+                           class="btn btn-outline-primary btn-sm">View Details</a>
+
+                        @if (User.Identity!.IsAuthenticated)
+                        {
+                            <form asp-controller="HelpRequest"
+                                  asp-action="Claim" method="post"
+                                  class="d-inline ms-2">
+                                <input type="hidden" name="id"
+                                       value="@req.HelpRequestId" />
+                                <button type="submit"
+                                        class="btn btn-primary btn-sm">Claim</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login"
+                               class="btn btn-outline-secondary btn-sm ms-2">
+                                Login to Help
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
