@@ -28,6 +28,8 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: validate-input
+    permissions:
+      contents: write
     environment:
       name: production
 
@@ -53,12 +55,14 @@ jobs:
           path: ./publish
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: release-${{ github.run_number }}
           name: "Production Release ${{ github.run_number }}"
+          generate_release_notes: true
+          make_latest: true
           body: |
-            Production deployment completed.
+            Production deployment completed successfully.
             Deployed by: ${{ github.actor }}
             Commit: ${{ github.sha }}
         env:
