@@ -1,0 +1,10 @@
+# Default owner for everything
+* @Sheyi Odeleye
+
+# Controllers and data layer
+/HelpingHand/Controllers/ @Sheyi Odeleye
+/HelpingHand/Data/ @Sheyi Odeleye
+/HelpingHand/Migrations/ @Sheyi Odeleye
+
+# Workflow files — any changes need review
+/.github/workflows/ @Sheyi Odeleye

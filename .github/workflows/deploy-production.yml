@@ -1,0 +1,71 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY to confirm production deployment'
+        required: true
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  validate-input:
+    name: Validate Confirmation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "DEPLOY" ]; then
+            echo "Confirmation not received. Aborting."
+            exit 1
+          fi
+          echo "Deployment confirmed."
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: validate-input
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build and publish
+        run: dotnet publish HelpingHand/HelpingHand.csproj --configuration Release --output ./publish
+
+      - name: Upload production artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-deployment
+          path: ./publish
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: release-${{ github.run_number }}
+          name: "Production Release ${{ github.run_number }}"
+          body: |
+            Production deployment completed.
+            Deployed by: ${{ github.actor }}
+            Commit: ${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deployment summary
+        run: |
+          echo "Production deployment completed at $(date)"
+          echo "Commit: ${{ github.sha }}"
+          echo "Triggered by: ${{ github.actor }}"
