@@ -4,6 +4,7 @@ using HelpingHand.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HelpingHand.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260512152928_AddAllNewFeatures")]
+    partial class AddAllNewFeatures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -191,14 +194,6 @@ namespace HelpingHand.Migrations
                     b.Property<DateTime?>("PreferredDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("RequesterConfirmedDone")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("RequesterFeedback")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<string>("RequesterId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -213,9 +208,6 @@ namespace HelpingHand.Migrations
 
                     b.Property<int>("Urgency")
                         .HasColumnType("int");
-
-                    b.Property<bool>("VolunteerConfirmedDone")
-                        .HasColumnType("bit");
 
                     b.Property<string>("VolunteerId")
                         .HasColumnType("nvarchar(450)");
@@ -353,14 +345,6 @@ namespace HelpingHand.Migrations
 
                     b.Property<int>("HelpRequestId")
                         .HasColumnType("int");
-
-                    b.Property<string>("IdDocumentPath")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<bool>("IdVerified")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IsAccepted")
                         .HasColumnType("bit");

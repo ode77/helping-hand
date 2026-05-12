@@ -1,0 +1,77 @@
+﻿@model HelpingHand.ViewModels.RequesterConfirmViewModel
+
+@{
+    ViewData["Title"] = "Confirm Completion";
+}
+
+<h2 class="mb-4" style="color:#1F3864;">
+    Confirm Task Completion
+</h2>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+
+        <div class="alert alert-info">
+            <strong>@Model.VolunteerName</strong> has marked
+            <strong>@Model.RequestTitle</strong> as completed.
+            Please confirm this is correct and leave feedback.
+        </div>
+
+        <form asp-action="ConfirmComplete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="HelpRequestId" />
+            <input type="hidden" asp-for="RequestTitle" />
+            <input type="hidden" asp-for="VolunteerName" />
+
+            <div asp-validation-summary="ModelOnly"
+                 class="alert alert-danger"></div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">
+                    Star Rating for @Model.VolunteerName
+                </label>
+                <div class="d-flex gap-3 fs-4">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input"
+                                   type="radio"
+                                   name="Stars"
+                                   value="@i"
+                                   id="star@(i)"
+                            @(i == 5 ? "checked" : "") />
+                            <label class="form-check-label"
+                                   for="star@(i)">
+                                @i ★
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Feedback"
+                       class="form-label fw-bold"></label>
+                <textarea asp-for="Feedback"
+                          class="form-control"
+                          rows="4"
+                          placeholder="How did it go? Was the volunteer helpful and reliable?"></textarea>
+                <span asp-validation-for="Feedback"
+                      class="text-danger small"></span>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a asp-controller="HelpRequest"
+                       asp-action="Details"
+                       asp-route-id="@Model.HelpRequestId"
+                       class="btn btn-outline-secondary">
+                    Not Yet — Go Back
+                </a>
+                <button type="submit"
+                        class="btn btn-success btn-lg">
+                    Confirm Completion
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

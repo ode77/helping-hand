@@ -4,6 +4,7 @@ using HelpingHand.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HelpingHand.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260512144547_AddUserContactDetailsAndPendingStatus")]
+    partial class AddUserContactDetailsAndPendingStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -39,9 +42,6 @@ namespace HelpingHand.Migrations
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
-
-                    b.Property<int>("CompletedHelpCount")
-                        .HasColumnType("int");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -95,10 +95,6 @@ namespace HelpingHand.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SkillCategories")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("TwoFactorEnabled")
@@ -185,19 +181,8 @@ namespace HelpingHand.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<DateTime?>("PreferredDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("RequesterConfirmedDone")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("RequesterFeedback")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("RequesterId")
                         .IsRequired()
@@ -211,12 +196,6 @@ namespace HelpingHand.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("Urgency")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("VolunteerConfirmedDone")
-                        .HasColumnType("bit");
-
                     b.Property<string>("VolunteerId")
                         .HasColumnType("nvarchar(450)");
 
@@ -226,200 +205,11 @@ namespace HelpingHand.Migrations
 
                     b.HasIndex("RequesterId");
 
-                    b.HasIndex("Urgency");
-
                     b.HasIndex("VolunteerId");
 
                     b.HasIndex("Status", "CreatedAt");
 
                     b.ToTable("HelpRequests");
-                });
-
-            modelBuilder.Entity("HelpingHand.Models.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<int?>("RelatedRequestId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("NotificationId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Notifications");
-                });
-
-            modelBuilder.Entity("HelpingHand.Models.RequestComment", b =>
-                {
-                    b.Property<int>("RequestCommentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RequestCommentId"));
-
-                    b.Property<string>("AuthorId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int>("HelpRequestId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("PostedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("RequestCommentId");
-
-                    b.HasIndex("AuthorId");
-
-                    b.HasIndex("HelpRequestId");
-
-                    b.ToTable("RequestComments");
-                });
-
-            modelBuilder.Entity("HelpingHand.Models.RequestTemplate", b =>
-                {
-                    b.Property<int>("RequestTemplateId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RequestTemplateId"));
-
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("Urgency")
-                        .HasColumnType("int");
-
-                    b.HasKey("RequestTemplateId");
-
-                    b.HasIndex("CategoryId");
-
-                    b.HasIndex("OwnerId");
-
-                    b.ToTable("RequestTemplates");
-                });
-
-            modelBuilder.Entity("HelpingHand.Models.VolunteerApplication", b =>
-                {
-                    b.Property<int>("VolunteerApplicationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VolunteerApplicationId"));
-
-                    b.Property<DateTime>("AppliedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("HelpRequestId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("IdDocumentPath")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<bool>("IdVerified")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsAccepted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("VolunteerId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("VolunteerApplicationId");
-
-                    b.HasIndex("HelpRequestId");
-
-                    b.HasIndex("VolunteerId");
-
-                    b.ToTable("VolunteerApplications");
-                });
-
-            modelBuilder.Entity("HelpingHand.Models.VolunteerRating", b =>
-                {
-                    b.Property<int>("VolunteerRatingId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("VolunteerRatingId"));
-
-                    b.Property<string>("Comment")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<int>("HelpRequestId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("RatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("RequesterId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Stars")
-                        .HasColumnType("int");
-
-                    b.Property<string>("VolunteerId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("VolunteerRatingId");
-
-                    b.HasIndex("HelpRequestId");
-
-                    b.HasIndex("VolunteerId");
-
-                    b.ToTable("VolunteerRatings");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -581,93 +371,6 @@ namespace HelpingHand.Migrations
                     b.Navigation("Volunteer");
                 });
 
-            modelBuilder.Entity("HelpingHand.Models.Notification", b =>
-                {
-                    b.HasOne("HelpingHand.Models.ApplicationUser", "User")
-                        .WithMany("Notifications")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("HelpingHand.Models.RequestComment", b =>
-                {
-                    b.HasOne("HelpingHand.Models.ApplicationUser", "Author")
-                        .WithMany()
-                        .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("HelpingHand.Models.HelpRequest", "HelpRequest")
-                        .WithMany("Comments")
-                        .HasForeignKey("HelpRequestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Author");
-
-                    b.Navigation("HelpRequest");
-                });
-
-            modelBuilder.Entity("HelpingHand.Models.RequestTemplate", b =>
-                {
-                    b.HasOne("HelpingHand.Models.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HelpingHand.Models.ApplicationUser", "Owner")
-                        .WithMany()
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Category");
-
-                    b.Navigation("Owner");
-                });
-
-            modelBuilder.Entity("HelpingHand.Models.VolunteerApplication", b =>
-                {
-                    b.HasOne("HelpingHand.Models.HelpRequest", "HelpRequest")
-                        .WithMany("Applications")
-                        .HasForeignKey("HelpRequestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HelpingHand.Models.ApplicationUser", "Volunteer")
-                        .WithMany()
-                        .HasForeignKey("VolunteerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("HelpRequest");
-
-                    b.Navigation("Volunteer");
-                });
-
-            modelBuilder.Entity("HelpingHand.Models.VolunteerRating", b =>
-                {
-                    b.HasOne("HelpingHand.Models.HelpRequest", "HelpRequest")
-                        .WithMany("Ratings")
-                        .HasForeignKey("HelpRequestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HelpingHand.Models.ApplicationUser", "Volunteer")
-                        .WithMany("RatingsReceived")
-                        .HasForeignKey("VolunteerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("HelpRequest");
-
-                    b.Navigation("Volunteer");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -723,25 +426,12 @@ namespace HelpingHand.Migrations
                 {
                     b.Navigation("ClaimedRequests");
 
-                    b.Navigation("Notifications");
-
                     b.Navigation("PostedRequests");
-
-                    b.Navigation("RatingsReceived");
                 });
 
             modelBuilder.Entity("HelpingHand.Models.Category", b =>
                 {
                     b.Navigation("HelpRequests");
-                });
-
-            modelBuilder.Entity("HelpingHand.Models.HelpRequest", b =>
-                {
-                    b.Navigation("Applications");
-
-                    b.Navigation("Comments");
-
-                    b.Navigation("Ratings");
                 });
 #pragma warning restore 612, 618
         }

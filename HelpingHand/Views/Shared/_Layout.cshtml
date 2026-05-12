@@ -1,98 +1,69 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] — Helping Hand</title>
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg" style="background-color:#1F3864;">
-        <div class="container">
-            <a class="navbar-brand text-white fw-bold"
-               asp-controller="Home" asp-action="Index">HELPING HAND</a>
-            <button class="navbar-toggler" type="button"
-                    data-bs-toggle="collapse" data-bs-target="#navMenu">
-                <span class="navbar-toggler-icon"></span>
+﻿@if (User.Identity!.IsAuthenticated)
+{
+    <li class="nav-item">
+        <a class="nav-link text-white"
+           asp-controller="HelpRequest"
+           asp-action="Create">Post Request</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-white"
+           asp-controller="Account"
+           asp-action="Dashboard">My Dashboard</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-white position-relative"
+               asp-controller="Notification"
+               asp-action="Index">
+            🔔 Notifications
+            @{
+                var notifCount = 0;
+                if (User.Identity!.IsAuthenticated)
+                {
+                    var notifRepo = Context.RequestServices
+                        .GetService<HelpingHand.Repositories
+                        .INotificationRepository>();
+                    if (notifRepo != null)
+                    {
+                        var uid = Context.User.FindFirst(
+                            System.Security.Claims
+                            .ClaimTypes.NameIdentifier)?.Value;
+                        if (uid != null)
+                            notifCount = await notifRepo
+                                .GetUnreadCountAsync(uid);
+                    }
+                }
+            }
+            @if (notifCount > 0)
+            {
+                <span class="position-absolute top-0 start-100
+                    translate-middle badge
+                    rounded-pill bg-danger"
+                      style="font-size:0.65rem;">
+                    @notifCount
+                </span>
+            }
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-white"
+           asp-controller="Account"
+           asp-action="Profile">My Profile</a>
+    </li>
+    @if (User.IsInRole("Admin"))
+    {
+        <li class="nav-item">
+            <a class="nav-link text-warning"
+               asp-controller="Admin"
+               asp-action="Index">Admin Panel</a>
+        </li>
+    }
+    <li class="nav-item">
+        <form asp-controller="Account"
+              asp-action="Logout" method="post">
+            <button type="submit"
+                    class="nav-link btn btn-link text-white">
+                Logout
             </button>
-            <div class="collapse navbar-collapse" id="navMenu">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link text-white"
-                           asp-controller="Home" asp-action="Board">Help Board</a>
-                    </li>
-                    @if (User.Identity!.IsAuthenticated)
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link text-white"
-                               asp-controller="HelpRequest"
-                               asp-action="Create">Post Request</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white"
-                               asp-controller="Account"
-                               asp-action="Dashboard">My Dashboard</a>
-                        </li>
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-warning"
-                                   asp-controller="Admin"
-                                   asp-action="Index">Admin Panel</a>
-                            </li>
-                        }
-                        <li class="nav-item">
-                            <form asp-controller="Account"
-                                  asp-action="Logout" method="post">
-                                <button type="submit"
-                                        class="nav-link btn btn-link text-white">
-                                    Logout
-                                </button>
-                            </form>
-                        </li>
-                    }
-                    else
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link text-white"
-                               asp-controller="Account"
-                               asp-action="Login">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-white"
-                               asp-controller="Account"
-                               asp-action="Register">Register</a>
-                        </li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    @if (TempData["Success"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show m-3">
-            @TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show m-3">
-            @TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-
-    <main class="container my-4">
-        @RenderBody()
-    </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
-    @await RenderSectionAsync("Scripts", required: false)
-</body>
-</html>
+        </form>
+    </li>
+}

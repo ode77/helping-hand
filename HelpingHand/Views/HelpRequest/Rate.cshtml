@@ -1,0 +1,51 @@
+﻿@model HelpingHand.ViewModels.RatingViewModel
+
+@{
+    ViewData["Title"] = "Rate Volunteer";
+}
+
+<h2 class="mb-4" style="color:#1F3864;">Rate Your Volunteer</h2>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <p>How would you rate <strong>@Model.VolunteerName</strong>?</p>
+        <form asp-action="Rate" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="HelpRequestId" />
+            <input type="hidden" asp-for="VolunteerName" />
+            <div asp-validation-summary="ModelOnly"
+                 class="alert alert-danger"></div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Star Rating</label>
+                <div class="d-flex gap-3 fs-3">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input"
+                                   type="radio"
+                                   name="Stars"
+                                   value="@i"
+                                   id="star@i" />
+                            <label class="form-check-label"
+                                   for="star@i">
+                                @i ★
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Comment"
+                       class="form-label fw-bold"></label>
+                <textarea asp-for="Comment"
+                          class="form-control" rows="3"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Submit Rating
+            </button>
+        </form>
+    </div>
+</div>

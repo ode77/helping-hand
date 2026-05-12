@@ -1,0 +1,39 @@
+﻿@model HelpingHand.ViewModels.NotificationViewModel
+
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<h2 class="mb-4" style="color:#1F3864;">Notifications</h2>
+
+@if (!Model.Notifications.Any())
+{
+    <div class="alert alert-info">
+        No notifications yet.
+    </div>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var notif in Model.Notifications)
+        {
+            <div class="list-group-item @(notif.IsRead ? "" : "list-group-item-warning")">
+                <div class="d-flex justify-content-between">
+                    <p class="mb-1">@notif.Message</p>
+                    <small class="text-muted">
+                        @notif.CreatedAt.ToString("dd MMM HH:mm")
+                    </small>
+                </div>
+                @if (notif.RelatedRequestId.HasValue)
+                {
+                    <a asp-controller="HelpRequest"
+                       asp-action="Details"
+                       asp-route-id="@notif.RelatedRequestId"
+                       class="btn btn-sm btn-outline-primary mt-1">
+                        View Request
+                    </a>
+                }
+            </div>
+        }
+    </div>
+}

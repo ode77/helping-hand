@@ -5,12 +5,18 @@
     {
         HelpingHand.Models.RequestStatus.Open
             => ("bg-success", "OPEN"),
+        HelpingHand.Models.RequestStatus.PendingApproval
+            => ("bg-warning text-dark", "PENDING APPROVAL"),
         HelpingHand.Models.RequestStatus.Assigned
-            => ("bg-warning text-dark", "ASSIGNED"),
+            => ("bg-primary", "ASSIGNED — IN PROGRESS"),
+        HelpingHand.Models.RequestStatus.VolunteerDone
+            => ("bg-info text-dark", "AWAITING REQUESTER CONFIRMATION"),
         HelpingHand.Models.RequestStatus.Completed
             => ("bg-secondary", "COMPLETED"),
         HelpingHand.Models.RequestStatus.Cancelled
             => ("bg-danger", "CANCELLED"),
+        HelpingHand.Models.RequestStatus.Expired
+            => ("bg-dark", "EXPIRED"),
         _ => ("bg-light text-dark", "UNKNOWN")
     };
 }

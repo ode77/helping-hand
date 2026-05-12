@@ -4,70 +4,147 @@
     ViewData["Title"] = "My Dashboard";
 }
 
+@* Welcome bar *@
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 style="color:#1F3864;">Welcome, @Model.UserFullName!</h2>
+    <div>
+        <h2 style="color:#1F3864;">
+            Welcome, @Model.UserFullName!
+        </h2>
+        @if (!string.IsNullOrEmpty(Model.Badge))
+        {
+            <span class="badge bg-warning text-dark fs-6">
+                🏅 @Model.Badge
+            </span>
+        }
+    </div>
     <a asp-controller="HelpRequest" asp-action="Create"
-       class="btn btn-primary">+ Post New Request</a>
+           class="btn btn-primary">
+        + Post New Request
+    </a>
 </div>
 
+@* Tabs *@
 <ul class="nav nav-tabs mb-3" id="dashTabs">
     <li class="nav-item">
-        <button class="nav-link active" data-bs-toggle="tab"
+        <button class="nav-link active"
+                data-bs-toggle="tab"
                 data-bs-target="#posted">
-            My Requests (@Model.PostedRequests.Count())
+            My Requests
+            <span class="badge bg-secondary ms-1">
+                @Model.PostedRequests.Count()
+            </span>
         </button>
     </li>
     <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab"
+        <button class="nav-link"
+                data-bs-toggle="tab"
                 data-bs-target="#helping">
-            Helping With (@Model.ClaimedRequests.Count())
+            Helping With
+            <span class="badge bg-secondary ms-1">
+                @Model.ClaimedRequests.Count()
+            </span>
         </button>
     </li>
     <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab"
+        <button class="nav-link"
+                data-bs-toggle="tab"
                 data-bs-target="#completed">
-            Completed (@Model.CompletedRequests.Count())
+            Completed
+            <span class="badge bg-secondary ms-1">
+                @Model.CompletedRequests.Count()
+            </span>
         </button>
     </li>
 </ul>
 
 <div class="tab-content">
 
+    @* MY REQUESTS TAB *@
     <div class="tab-pane fade show active" id="posted">
         @if (!Model.PostedRequests.Any())
         {
-            <p class="text-muted">You have not posted any active requests.</p>
+            <div class="alert alert-light border mt-3">
+                You have not posted any active requests yet.
+                <a asp-controller="HelpRequest"
+                   asp-action="Create">Post one now</a>.
+            </div>
         }
         else
         {
-            <table class="table table-hover">
+            <table class="table table-hover mt-2">
                 <thead class="table-light">
                     <tr>
                         <th>Title</th>
+                        <th>Urgency</th>
                         <th>Status</th>
                         <th>Posted</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var r in Model.PostedRequests)
+                    @foreach (var req in Model.PostedRequests)
                     {
                         <tr>
-                            <td>@r.Title</td>
-                            <td>@await Html.PartialAsync("_StatusBadge", r.Status)</td>
-                            <td>@r.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td>@req.Title</td>
+                            <td>
+                                @{
+                                    var urg = req.Urgency switch
+                                    {
+                                        HelpingHand.Models
+                                            .RequestUrgency.Urgent
+                                            => ("bg-danger", "🔴 Urgent"),
+                                        HelpingHand.Models
+                                            .RequestUrgency.Medium
+                                            => ("bg-warning text-dark",
+                                                "🟡 Medium"),
+                                        _ => ("bg-success", "🟢 Low")
+                                    };
+                                }
+                                <span class="badge @urg.Item1">
+                                    @urg.Item2
+                                </span>
+                            </td>
+                            <td>
+                                @await Html.PartialAsync(
+                                    "_StatusBadge", req.Status)
+                            </td>
+                            <td>
+                                @req.CreatedAt
+                                .ToString("dd MMM yyyy")
+                            </td>
                             <td>
                                 <a asp-controller="HelpRequest"
-                                   asp-action="Details"
-                                   asp-route-id="@r.HelpRequestId"
-                                   class="btn btn-outline-primary btn-sm">View</a>
-                                @if (r.Status == HelpingHand.Models.RequestStatus.Open)
+                                       asp-action="Details"
+                                       asp-route-id="@req.HelpRequestId"
+                                       class="btn btn-outline-primary btn-sm">
+                                    View
+                                </a>
+
+                                @* Confirm complete button *@
+                                @if (req.Status ==
+                                    HelpingHand.Models
+                                        .RequestStatus.VolunteerDone)
+                                {
+                                    <a asp-controller="HelpRequest"
+                                           asp-action="ConfirmComplete"
+                                           asp-route-id="@req.HelpRequestId"
+                                           class="btn btn-warning btn-sm ms-1">
+                                        ✅ Confirm Complete
+                                    </a>
+                                }
+
+                                @* Cancel button *@
+                                @if (req.Status ==
+                                    HelpingHand.Models
+                                        .RequestStatus.Open)
                                 {
                                     <form asp-controller="HelpRequest"
-                                          asp-action="Cancel" method="post"
+                                          asp-action="Cancel"
+                                          method="post"
                                           class="d-inline ms-1">
-                                        <input type="hidden" name="id"
-                                               value="@r.HelpRequestId" />
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@req.HelpRequestId" />
                                         <button type="submit"
                                                 class="btn btn-outline-danger btn-sm">
                                             Cancel
@@ -82,34 +159,74 @@
         }
     </div>
 
+    @* HELPING WITH TAB *@
     <div class="tab-pane fade" id="helping">
         @if (!Model.ClaimedRequests.Any())
         {
-            <p class="text-muted">You are not currently helping with any requests.</p>
+            <div class="alert alert-light border mt-3">
+                You are not currently helping with any requests.
+                <a asp-controller="Home"
+                   asp-action="Board">Browse the Help Board</a>.
+            </div>
         }
         else
         {
-            <table class="table table-hover">
+            <table class="table table-hover mt-2">
                 <thead class="table-light">
-                    <tr><th>Title</th><th>Status</th><th>Actions</th></tr>
+                    <tr>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    @foreach (var r in Model.ClaimedRequests)
+                    @foreach (var req in Model.ClaimedRequests)
                     {
                         <tr>
-                            <td>@r.Title</td>
-                            <td>@await Html.PartialAsync("_StatusBadge", r.Status)</td>
+                            <td>@req.Title</td>
                             <td>
-                                <form asp-controller="HelpRequest"
-                                      asp-action="Complete" method="post"
-                                      class="d-inline">
-                                    <input type="hidden" name="id"
-                                           value="@r.HelpRequestId" />
-                                    <button type="submit"
-                                            class="btn btn-success btn-sm">
-                                        Mark Complete
-                                    </button>
-                                </form>
+                                @await Html.PartialAsync(
+                                    "_StatusBadge", req.Status)
+                            </td>
+                            <td>
+                                <a asp-controller="HelpRequest"
+                                       asp-action="Details"
+                                       asp-route-id="@req.HelpRequestId"
+                                       class="btn btn-outline-primary btn-sm">
+                                    View
+                                </a>
+
+                                @* Mark done button *@
+                                @if (req.Status ==
+                                    HelpingHand.Models
+                                        .RequestStatus.Assigned)
+                                {
+                                    <form asp-controller="HelpRequest"
+                                          asp-action="VolunteerMarkDone"
+                                          method="post"
+                                          class="d-inline ms-1">
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@req.HelpRequestId" />
+                                        <button type="submit"
+                                                class="btn btn-success btn-sm"
+                                                onclick="return confirm('Are you sure you have completed this task?')">
+                                            Mark Done
+                                        </button>
+                                    </form>
+                                }
+
+                                @* Waiting message *@
+                                @if (req.Status ==
+                                    HelpingHand.Models
+                                        .RequestStatus.VolunteerDone)
+                                {
+                                    <span class="badge bg-info
+                                        text-dark ms-1">
+                                        Waiting for requester
+                                        to confirm
+                                    </span>
+                                }
                             </td>
                         </tr>
                     }
@@ -118,23 +235,41 @@
         }
     </div>
 
+    @* COMPLETED TAB *@
     <div class="tab-pane fade" id="completed">
         @if (!Model.CompletedRequests.Any())
         {
-            <p class="text-muted">No completed requests yet.</p>
+            <div class="alert alert-light border mt-3">
+                No completed requests yet.
+            </div>
         }
         else
         {
-            <table class="table table-hover">
+            <table class="table table-hover mt-2">
                 <thead class="table-light">
-                    <tr><th>Title</th><th>Completed</th></tr>
+                    <tr>
+                        <th>Title</th>
+                        <th>Completed</th>
+                        <th>Actions</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    @foreach (var r in Model.CompletedRequests)
+                    @foreach (var req in Model.CompletedRequests)
                     {
                         <tr>
-                            <td>@r.Title</td>
-                            <td>@r.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td>@req.Title</td>
+                            <td>
+                                @req.CreatedAt
+                                .ToString("dd MMM yyyy")
+                            </td>
+                            <td>
+                                <a asp-controller="HelpRequest"
+                                       asp-action="Details"
+                                       asp-route-id="@req.HelpRequestId"
+                                       class="btn btn-outline-secondary btn-sm">
+                                    View
+                                </a>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -143,3 +278,51 @@
     </div>
 
 </div>
+
+@* TEMPLATES SECTION *@
+@if (Model.Templates != null && Model.Templates.Any())
+{
+    <hr class="mt-5" />
+    <h5 class="mb-3">
+        📋 My Saved Templates
+    </h5>
+    <div class="row">
+        @foreach (var tmpl in Model.Templates)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="card border-secondary shadow-sm">
+                    <div class="card-body">
+                        <h6 class="fw-bold">@tmpl.Title</h6>
+                        <p class="text-muted small mb-1">
+                            @tmpl.Category?.Name
+                        </p>
+                        <p class="text-muted small mb-3">
+                            @(tmpl.Description.Length > 80
+                                ? tmpl.Description[..80] + "..."
+                                : tmpl.Description)
+                        </p>
+                        <a asp-controller="HelpRequest"
+                               asp-action="Create"
+                               asp-route-templateId="@tmpl.RequestTemplateId"
+                               class="btn btn-sm btn-outline-primary me-1">
+                            Use Template
+                        </a>
+                        <form asp-controller="HelpRequest"
+                              asp-action="DeleteTemplate"
+                              method="post"
+                              class="d-inline">
+                            <input type="hidden"
+                                   name="templateId"
+                                   value="@tmpl.RequestTemplateId" />
+                            <button type="submit"
+                                    class="btn btn-sm btn-outline-danger"
+                                    onclick="return confirm('Delete this template?')">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

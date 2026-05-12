@@ -1,0 +1,77 @@
+﻿@model IEnumerable<HelpingHand.ViewModels.AdminUserViewModel>
+
+@{
+    ViewData["Title"] = "Manage Users";
+}
+
+<a asp-action="Index"
+       class="btn btn-outline-secondary btn-sm mb-3">
+    ← Back to Admin Panel
+</a>
+
+<h2 class="mb-4" style="color:#1F3864;">All Users</h2>
+
+<table class="table table-hover table-bordered table-sm">
+    <thead class="table-dark">
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Availability</th>
+            <th>Emergency Contact</th>
+            <th>Role</th>
+            <th>Posted</th>
+            <th>Claimed</th>
+            <th>Completed</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.FullName</td>
+                <td>
+                    <a href="mailto:@user.Email">@user.Email</a>
+                </td>
+                <td>
+                    <a href="tel:@user.PhoneNumber">
+                        @user.PhoneNumber
+                    </a>
+                </td>
+                <td>@user.Address</td>
+                <td>@user.Availability</td>
+                <td>
+                    @user.EmergencyContactName
+                    <br />
+                    <small class="text-muted">
+                        @user.EmergencyContactPhone
+                    </small>
+                </td>
+                <td>
+                    <span class="badge @(user.Role == "Admin" ? "bg-danger" : "bg-secondary")">
+                        @user.Role
+                    </span>
+                </td>
+                <td class="text-center">@user.TotalRequestsPosted</td>
+                <td class="text-center">@user.TotalRequestsClaimed</td>
+                <td class="text-center">@user.TotalCompleted</td>
+                <td>
+                    <form asp-action="ToggleAdmin" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="userId"
+                               value="@user.Id" />
+                        <button type="submit"
+                                class="btn btn-sm @(user.Role == "Admin" ? "btn-outline-danger" : "btn-outline-success")"
+                                onclick="return confirm('Change this user\'s role?')">
+                            @(user.Role == "Admin"
+                                ? "Remove Admin"
+                                : "Make Admin")
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

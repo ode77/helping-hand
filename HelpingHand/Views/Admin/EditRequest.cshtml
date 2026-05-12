@@ -1,0 +1,41 @@
+﻿@model HelpingHand.Models.HelpRequest
+
+@{
+    ViewData["Title"] = "Edit Request";
+}
+
+<a asp-action="Index"
+       class="btn btn-outline-secondary btn-sm mb-3">
+    ← Back to Admin Panel
+</a>
+
+<h3 style="color:#1F3864;">Edit Request</h3>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <form asp-action="EditRequest" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id"
+                   value="@Model.HelpRequestId" />
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Title</label>
+                <input name="title" class="form-control"
+                       value="@Model.Title" />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-bold">
+                    Description
+                </label>
+                <textarea name="description"
+                          class="form-control"
+                          rows="5">@Model.Description</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Save Changes
+            </button>
+        </form>
+    </div>
+</div>

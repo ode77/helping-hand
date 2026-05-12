@@ -1,0 +1,64 @@
+﻿@model HelpingHand.ViewModels.ProfileViewModel
+
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<h2 class="mb-4" style="color:#1F3864;">My Profile</h2>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <form asp-action="Profile" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly"
+                 class="alert alert-danger"></div>
+
+            <h5 class="mb-3 text-muted">Contact Information</h5>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Full Name</label>
+                <input class="form-control"
+                       value="@Model.FullName" disabled />
+            </div>
+            <div class="mb-3">
+                <label asp-for="PhoneNumber"
+                       class="form-label fw-bold"></label>
+                <input asp-for="PhoneNumber" class="form-control" />
+                <span asp-validation-for="PhoneNumber"
+                      class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Address"
+                       class="form-label fw-bold"></label>
+                <input asp-for="Address" class="form-control" />
+                <span asp-validation-for="Address"
+                      class="text-danger small"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Availability"
+                       class="form-label fw-bold"></label>
+                <input asp-for="Availability" class="form-control"
+                       placeholder="e.g. Weekday mornings, weekends" />
+            </div>
+
+            <h5 class="mb-3 mt-2 text-muted">Emergency Contact</h5>
+
+            <div class="mb-3">
+                <label asp-for="EmergencyContactName"
+                       class="form-label fw-bold"></label>
+                <input asp-for="EmergencyContactName"
+                       class="form-control" />
+            </div>
+            <div class="mb-4">
+                <label asp-for="EmergencyContactPhone"
+                       class="form-label fw-bold"></label>
+                <input asp-for="EmergencyContactPhone"
+                       class="form-control" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Save Changes
+            </button>
+        </form>
+    </div>
+</div>

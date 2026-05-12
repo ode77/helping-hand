@@ -11,13 +11,18 @@ namespace HelpingHand.Repositories
         public HelpRequestRepository(ApplicationDbContext context)
             => _context = context;
 
-        public async Task<IEnumerable<HelpRequest>> GetOpenRequestsAsync()
+        // Only Open requests that have not expired
+        // Sorted urgent first then most recent
+        public async Task<IEnumerable<HelpRequest>>
+            GetOpenRequestsAsync()
             => await _context.HelpRequests
                 .AsNoTracking()
                 .Include(h => h.Category)
                 .Include(h => h.Requester)
-                .Where(h => h.Status == RequestStatus.Open)
-                .OrderByDescending(h => h.CreatedAt)
+                .Where(h => h.Status == RequestStatus.Open
+                         && h.ExpiresAt > DateTime.UtcNow)
+                .OrderByDescending(h => h.Urgency)
+                .ThenByDescending(h => h.CreatedAt)
                 .ToListAsync();
 
         public async Task<IEnumerable<HelpRequest>> GetAllAsync()
@@ -25,6 +30,7 @@ namespace HelpingHand.Repositories
                 .AsNoTracking()
                 .Include(h => h.Category)
                 .Include(h => h.Requester)
+                .Include(h => h.Volunteer)
                 .OrderByDescending(h => h.CreatedAt)
                 .ToListAsync();
 
@@ -33,20 +39,29 @@ namespace HelpingHand.Repositories
                 .Include(h => h.Category)
                 .Include(h => h.Requester)
                 .Include(h => h.Volunteer)
+                .Include(h => h.Applications)
+                    .ThenInclude(a => a.Volunteer)
+                .Include(h => h.Comments)
+                    .ThenInclude(c => c.Author)
+                .Include(h => h.Ratings)
                 .FirstOrDefaultAsync(h => h.HelpRequestId == id);
 
-        public async Task<IEnumerable<HelpRequest>> GetByRequesterIdAsync(string userId)
+        public async Task<IEnumerable<HelpRequest>>
+            GetByRequesterIdAsync(string userId)
             => await _context.HelpRequests
                 .AsNoTracking()
                 .Include(h => h.Category)
+                .Include(h => h.Volunteer)
                 .Where(h => h.RequesterId == userId)
                 .OrderByDescending(h => h.CreatedAt)
                 .ToListAsync();
 
-        public async Task<IEnumerable<HelpRequest>> GetByVolunteerIdAsync(string userId)
+        public async Task<IEnumerable<HelpRequest>>
+            GetByVolunteerIdAsync(string userId)
             => await _context.HelpRequests
                 .AsNoTracking()
                 .Include(h => h.Category)
+                .Include(h => h.Requester)
                 .Where(h => h.VolunteerId == userId)
                 .OrderByDescending(h => h.CreatedAt)
                 .ToListAsync();

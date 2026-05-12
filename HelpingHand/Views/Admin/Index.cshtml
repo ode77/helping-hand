@@ -2,53 +2,234 @@
 
 @{
     ViewData["Title"] = "Admin Panel";
+    var total = Model.Count();
+    var open = Model.Count(r => r.Status ==
+        HelpingHand.Models.RequestStatus.Open);
+    var pending = Model.Count(r => r.Status ==
+        HelpingHand.Models.RequestStatus.PendingApproval);
+    var assigned = Model.Count(r => r.Status ==
+        HelpingHand.Models.RequestStatus.Assigned);
+    var volunteerDone = Model.Count(r => r.Status ==
+        HelpingHand.Models.RequestStatus.VolunteerDone);
+    var completed = Model.Count(r => r.Status ==
+        HelpingHand.Models.RequestStatus.Completed);
 }
 
 <div class="alert alert-warning">
-    ⚠ You are in the Admin Panel. Actions here affect all users.
+    ⚠ Admin Panel — actions here affect all users and requests.
 </div>
 
-<h2 class="mb-4" style="color:#1F3864;">All Requests</h2>
+<div class="d-flex justify-content-between
+    align-items-center mb-4">
+    <h2 style="color:#1F3864;">Admin Dashboard</h2>
+    <a asp-action="ManageUsers"
+           class="btn btn-outline-primary">
+        Manage Users
+    </a>
+</div>
 
-<table class="table table-hover table-bordered">
-    <thead class="table-dark">
-        <tr>
-            <th>ID</th>
-            <th>Title</th>
-            <th>Category</th>
-            <th>Status</th>
-            <th>Posted By</th>
-            <th>Date</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var r in Model)
-        {
+@* Stats cards *@
+<div class="row mb-4 g-3">
+    <div class="col-6 col-md-2">
+        <div class="card text-center border-0 shadow-sm">
+            <div class="card-body">
+                <h3 class="text-primary mb-0">@total</h3>
+                <small class="text-muted">Total</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card text-center border-0 shadow-sm">
+            <div class="card-body">
+                <h3 class="text-success mb-0">@open</h3>
+                <small class="text-muted">Open</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card text-center border-0 shadow-sm">
+            <div class="card-body">
+                <h3 class="text-warning mb-0">@pending</h3>
+                <small class="text-muted">Pending</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card text-center border-0 shadow-sm">
+            <div class="card-body">
+                <h3 class="text-primary mb-0">@assigned</h3>
+                <small class="text-muted">Assigned</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card text-center border-0 shadow-sm">
+            <div class="card-body">
+                <h3 class="text-info mb-0">@volunteerDone</h3>
+                <small class="text-muted">Awaiting Confirm</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-2">
+        <div class="card text-center border-0 shadow-sm">
+            <div class="card-body">
+                <h3 class="text-secondary mb-0">@completed</h3>
+                <small class="text-muted">Completed</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Pending approval alert *@
+@if (pending > 0)
+{
+    <div class="alert alert-info">
+        <strong>@pending claim(s) awaiting your approval</strong>
+        — they are highlighted below in yellow.
+    </div>
+}
+
+@* Awaiting confirmation alert *@
+@if (volunteerDone > 0)
+{
+    <div class="alert alert-light border-info">
+        <strong>@volunteerDone request(s)</strong>
+        have been marked done by volunteers
+        and are waiting for requester confirmation.
+    </div>
+}
+
+@* Requests table *@
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle">
+        <thead class="table-dark">
             <tr>
-                <td>@r.HelpRequestId</td>
-                <td>@r.Title</td>
-                <td>@r.Category?.Name</td>
-                <td>@await Html.PartialAsync("_StatusBadge", r.Status)</td>
-                <td>@r.Requester?.FullName</td>
-                <td>@r.CreatedAt.ToString("dd MMM yyyy")</td>
-                <td>
-                    <a asp-controller="HelpRequest"
-                       asp-action="Details"
-                       asp-route-id="@r.HelpRequestId"
-                       class="btn btn-outline-primary btn-sm">View</a>
-                    <form asp-action="DeleteRequest" method="post"
-                          class="d-inline ms-1">
-                        <input type="hidden" name="id"
-                               value="@r.HelpRequestId" />
-                        <button type="submit"
-                                class="btn btn-danger btn-sm"
-                                onclick="return confirm('Delete this request?')">
-                            Delete
-                        </button>
-                    </form>
-                </td>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Urgency</th>
+                <th>Status</th>
+                <th>Posted By</th>
+                <th>Date</th>
+                <th>Actions</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var req in Model
+                .OrderByDescending(r =>
+                    r.Status ==
+                    HelpingHand.Models.RequestStatus.PendingApproval)
+                .ThenByDescending(r => r.CreatedAt))
+            {
+                <tr class="@(req.Status ==
+                                                            HelpingHand.Models.RequestStatus.PendingApproval
+                                                            ? "table-warning"
+                                                            : req.Status ==
+                                                            HelpingHand.Models.RequestStatus.VolunteerDone
+                                                            ? "table-info"
+                                                            : "")">
+                    <td>@req.HelpRequestId</td>
+                    <td>@req.Title</td>
+                    <td>@req.Category?.Name</td>
+                    <td>
+                        @{
+                            var urgency = req.Urgency switch
+                            {
+                                HelpingHand.Models
+                                    .RequestUrgency.Urgent
+                                    => ("bg-danger", "🔴 Urgent"),
+                                HelpingHand.Models
+                                    .RequestUrgency.Medium
+                                    => ("bg-warning text-dark",
+                                        "🟡 Medium"),
+                                _ => ("bg-success", "🟢 Low")
+                            };
+                        }
+                        <span class="badge @urgency.Item1">
+                            @urgency.Item2
+                        </span>
+                    </td>
+                    <td>
+                        @await Html.PartialAsync(
+                            "_StatusBadge", req.Status)
+                    </td>
+                    <td>@req.Requester?.FullName</td>
+                    <td>@req.CreatedAt.ToString("dd MMM yyyy")</td>
+                    <td>
+                        @* Contact info *@
+                        <a asp-action="RequesterDetails"
+                               asp-route-requestId="@req.HelpRequestId"
+                               class="btn btn-outline-info btn-sm mb-1">
+                            Contact
+                        </a>
+
+                        @* Pending approval actions *@
+                        @if (req.Status ==
+                            HelpingHand.Models
+                                .RequestStatus.PendingApproval)
+                        {
+                            <a asp-action="ViewVolunteerId"
+                                   asp-route-applicationId="@req.HelpRequestId"
+                                   class="btn btn-outline-dark btn-sm mb-1">
+                                View ID
+                            </a>
+
+                            <form asp-action="ApproveClaim"
+                                  method="post"
+                                  class="d-inline mb-1">
+                                <input type="hidden"
+                                       name="id"
+                                       value="@req.HelpRequestId" />
+                                <button type="submit"
+                                        class="btn btn-success btn-sm">
+                                    Approve
+                                </button>
+                            </form>
+
+                            <form asp-action="RejectClaim"
+                                  method="post"
+                                  class="d-inline mb-1">
+                                <input type="hidden"
+                                       name="id"
+                                       value="@req.HelpRequestId" />
+                                <button type="submit"
+                                        class="btn btn-warning btn-sm">
+                                    Reject
+                                </button>
+                            </form>
+                        }
+
+                        @* Assign volunteer *@
+                        <a asp-action="AssignVolunteer"
+                               asp-route-requestId="@req.HelpRequestId"
+                               class="btn btn-outline-secondary btn-sm mb-1">
+                            Assign
+                        </a>
+
+                        @* Edit *@
+                        <a asp-action="EditRequest"
+                               asp-route-id="@req.HelpRequestId"
+                               class="btn btn-outline-primary btn-sm mb-1">
+                            Edit
+                        </a>
+
+                        @* Delete *@
+                        <form asp-action="DeleteRequest"
+                              method="post"
+                              class="d-inline">
+                            <input type="hidden"
+                                   name="id"
+                                   value="@req.HelpRequestId" />
+                            <button type="submit"
+                                    class="btn btn-danger btn-sm mb-1"
+                                    onclick="return confirm(
+                                'Delete this request?')">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -2,27 +2,9 @@
 
 namespace HelpingHand.ViewModels
 {
-    public class RegisterViewModel
+    public class ProfileViewModel
     {
-        [Required]
-        [MaxLength(100)]
-        [Display(Name = "Full Name")]
         public string FullName { get; set; } = string.Empty;
-
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
-
-        [Required]
-        [MinLength(8)]
-        [DataType(DataType.Password)]
-        public string Password { get; set; } = string.Empty;
-
-        [Required]
-        [DataType(DataType.Password)]
-        [Compare("Password", ErrorMessage = "Passwords do not match.")]
-        [Display(Name = "Confirm Password")]
-        public string ConfirmPassword { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(20)]
@@ -35,7 +17,7 @@ namespace HelpingHand.ViewModels
         public string Address { get; set; } = string.Empty;
 
         [MaxLength(250)]
-        [Display(Name = "Availability (e.g. Weekday mornings, weekends)")]
+        [Display(Name = "Availability")]
         public string Availability { get; set; } = string.Empty;
 
         [MaxLength(100)]

@@ -9,6 +9,14 @@
     Your request will appear on the Help Board for volunteers to claim.
 </p>
 
+@if (Model.TemplateId.HasValue)
+{
+    <div class="alert alert-info">
+        This form has been pre-filled from one of your saved templates.
+        You can edit anything before submitting.
+    </div>
+}
+
 <div class="card shadow-sm">
     <div class="card-body p-4">
         <form asp-action="Create" method="post">
@@ -16,16 +24,27 @@
             <div asp-validation-summary="ModelOnly"
                  class="alert alert-danger"></div>
 
+            @if (Model.TemplateId.HasValue)
+            {
+                <input type="hidden" asp-for="TemplateId" />
+            }
+
             <div class="mb-3">
-                <label asp-for="Title" class="form-label fw-bold"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger small"></span>
+                <label asp-for="Title"
+                       class="form-label fw-bold"></label>
+                <input asp-for="Title"
+                       class="form-control"
+                       placeholder="e.g. Help with weekly grocery shop" />
+                <span asp-validation-for="Title"
+                      class="text-danger small"></span>
             </div>
 
             <div class="mb-3">
-                <label asp-for="CategoryId" class="form-label fw-bold"></label>
+                <label asp-for="CategoryId"
+                       class="form-label fw-bold"></label>
                 <select asp-for="CategoryId"
-                        asp-items="@(new SelectList(Model.Categories,
+                        asp-items="@(new SelectList(
+                                                                        Model.Categories,
                                                                         "CategoryId", "Name"))"
                         class="form-select">
                     <option value="">-- Select a category --</option>
@@ -35,25 +54,71 @@
             </div>
 
             <div class="mb-3">
-                <label asp-for="Description" class="form-label fw-bold"></label>
+                <label asp-for="Urgency"
+                       class="form-label fw-bold"></label>
+                <select asp-for="Urgency" class="form-select">
+                    <option value="0">
+                        🟢 Low — no rush, anytime suits
+                    </option>
+                    <option value="1" selected>
+                        🟡 Medium — within a few days
+                    </option>
+                    <option value="2">
+                        🔴 Urgent — needed as soon as possible
+                    </option>
+                </select>
+                <div class="form-text">
+                    Urgent requests appear at the top of the Help Board.
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description"
+                       class="form-label fw-bold"></label>
                 <textarea asp-for="Description"
-                          class="form-control" rows="5"></textarea>
+                          class="form-control"
+                          rows="5"
+                          placeholder="Describe what help you need, when you need it, and any relevant details..."></textarea>
                 <span asp-validation-for="Description"
                       class="text-danger small"></span>
+                <div class="form-text text-end">
+                    <span id="descCount">0</span> / 1000 characters
+                </div>
             </div>
 
             <div class="mb-4">
-                <label asp-for="PreferredDate" class="form-label fw-bold"></label>
-                <input asp-for="PreferredDate" type="date" class="form-control" />
+                <label asp-for="PreferredDate"
+                       class="form-label fw-bold"></label>
+                <input asp-for="PreferredDate"
+                       type="date" class="form-control" />
+                <div class="form-text">
+                    Optional — leave blank if any date works.
+                </div>
             </div>
 
             <div class="d-flex justify-content-between">
                 <a asp-controller="Home" asp-action="Board"
-                   class="btn btn-outline-secondary">Cancel</a>
-                <button type="submit" class="btn btn-primary">
+                       class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary px-4">
                     Submit Request
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        const desc = document.querySelector(
+            'textarea[name="Description"]');
+        const counter = document.getElementById('descCount');
+        if (desc && counter) {
+            counter.textContent = desc.value.length;
+            desc.addEventListener('input', function () {
+                counter.textContent = this.value.length;
+            });
+        }
+    </script>
+}

@@ -1,0 +1,72 @@
+﻿@model HelpingHand.ViewModels.AdminUserViewModel
+
+@{
+    ViewData["Title"] = "Requester Contact Details";
+}
+
+<a asp-action="Index"
+       class="btn btn-outline-secondary btn-sm mb-3">
+    ← Back to Admin Panel
+</a>
+
+<h3 style="color:#1F3864;">Requester Contact Details</h3>
+<p class="text-muted">
+    For request: <strong>@ViewBag.RequestTitle</strong>
+</p>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="mb-3 text-muted">Personal Details</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Full Name</th>
+                        <td>@Model.FullName</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>
+                            <a href="mailto:@Model.Email">
+                                @Model.Email
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Phone</th>
+                        <td>
+                            <a href="tel:@Model.PhoneNumber">
+                                @Model.PhoneNumber
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Address</th>
+                        <td>@Model.Address</td>
+                    </tr>
+                    <tr>
+                        <th>Availability</th>
+                        <td>@Model.Availability</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 class="mb-3 text-muted">Emergency Contact</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Name</th>
+                        <td>@Model.EmergencyContactName</td>
+                    </tr>
+                    <tr>
+                        <th>Phone</th>
+                        <td>
+                            <a href="tel:@Model.EmergencyContactPhone">
+                                @Model.EmergencyContactPhone
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

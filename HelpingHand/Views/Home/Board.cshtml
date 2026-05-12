@@ -3,62 +3,238 @@
 
 @{
     ViewData["Title"] = "Help Board";
+    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 }
 
-<h2 class="mb-4" style="color:#1F3864;">Help Board</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 style="color:#1F3864;">Help Board</h2>
+    @if (User.Identity!.IsAuthenticated)
+    {
+        <a asp-controller="HelpRequest" asp-action="Create"
+               class="btn btn-primary">
+            + Post a Request
+        </a>
+    }
+</div>
 
+@* Filter bar *@
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex flex-wrap gap-2
+            align-items-center">
+            <label class="fw-bold me-1 mb-0">
+                Filter by Category:
+            </label>
+            <select name="category" class="form-select form-select-sm"
+                    style="width:200px;">
+                <option value="">All Categories</option>
+                @foreach (var cat in ViewBag.Categories as
+                    IEnumerable<HelpingHand.Models.Category>
+                    ?? Enumerable.Empty<HelpingHand.Models.Category>())
+                {
+                    <option value="@cat.CategoryId"
+                            selected="@(ViewBag.SelectedCategory
+                                                                                    ?.ToString() == cat.CategoryId.ToString()
+                                                                                    ? "selected" : null)">
+                        @cat.Name
+                    </option>
+                }
+            </select>
+
+            <label class="fw-bold me-1 mb-0">Urgency:</label>
+            <select name="urgency" class="form-select form-select-sm"
+                    style="width:160px;">
+                <option value="">All</option>
+                <option value="2" selected="@(ViewBag.SelectedUrgency
+                                                                          ?.ToString() == "2" ? "selected" : null)">
+                    🔴 Urgent
+                </option>
+                <option value="1" selected="@(ViewBag.SelectedUrgency
+                                                                          ?.ToString() == "1" ? "selected" : null)">
+                    🟡 Medium
+                </option>
+                <option value="0" selected="@(ViewBag.SelectedUrgency
+                                                                          ?.ToString() == "0" ? "selected" : null)">
+                    🟢 Low
+                </option>
+            </select>
+
+            <button type="submit"
+                    class="btn btn-outline-primary btn-sm">
+                Apply
+            </button>
+            <a asp-action="Board"
+                   class="btn btn-outline-secondary btn-sm">
+                Clear
+            </a>
+        </form>
+    </div>
+</div>
+
+@* Matched for you section — only for logged in volunteers *@
+@if (User.Identity!.IsAuthenticated && ViewBag.MatchedRequests != null)
+{
+    var matched = ViewBag.MatchedRequests as
+        IEnumerable<HelpingHand.Models.HelpRequest>;
+    if (matched != null && matched.Any())
+    {
+        <div class="mb-4">
+            <h5 class="text-success">
+                ✅ Matched for You
+            </h5>
+            <p class="text-muted small">
+                Based on your skill categories
+            </p>
+            <div class="row row-cols-1 row-cols-md-3 g-3 mb-2">
+                @foreach (var req in matched.Take(3))
+                {
+                    <div class="col">
+                        @await Html.PartialAsync(
+                            "_RequestCard",
+                            new HelpingHand.ViewModels
+                                .RequestCardViewModel
+                            {
+                                Request = req,
+                                CurrentUserId = userId ?? ""
+                            })
+                    </div>
+                }
+            </div>
+            <hr />
+        </div>
+    }
+}
+
+@* Main board *@
 @if (!Model.Any())
 {
-    <div class="alert alert-info">No open requests right now. Check back soon!</div>
+    <div class="alert alert-info text-center py-4">
+        <h5>No open requests right now</h5>
+        <p class="mb-0">
+            Check back soon or
+            <a asp-controller="HelpRequest"
+               asp-action="Create">post your own request</a>.
+        </p>
+    </div>
 }
 else
 {
+    <p class="text-muted small mb-3">
+        Showing @Model.Count() open request(s) —
+        sorted by urgency then most recent
+    </p>
+
     <div class="row row-cols-1 row-cols-md-3 g-4">
         @foreach (var req in Model)
         {
             <div class="col">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm
+                    @(req.Urgency ==
+                                             HelpingHand.Models.RequestUrgency.Urgent
+                                             ? "border-danger" : "")">
+
                     <div class="card-body">
-                        <span class="badge bg-primary mb-1">@req.Category?.Name</span>
-                        @await Html.PartialAsync("_StatusBadge", req.Status)
-                        <h5 class="card-title mt-2">@req.Title</h5>
+
+                        @* Urgency banner for urgent requests *@
+                        @if (req.Urgency ==
+                            HelpingHand.Models.RequestUrgency.Urgent)
+                        {
+                            <div class="alert alert-danger
+                                py-1 px-2 mb-2 small fw-bold">
+                                🔴 URGENT — Needed as soon as possible
+                            </div>
+                        }
+
+                        @* Category and status badges *@
+                        <div class="mb-2">
+                            <span class="badge bg-primary me-1">
+                                @req.Category?.Name
+                            </span>
+                            @{
+                                var (urgCss, urgLabel) =
+                                    req.Urgency switch
+                                    {
+                                        HelpingHand.Models.RequestUrgency
+                                            .Urgent => ("bg-danger", "🔴 Urgent"),
+                                        HelpingHand.Models.RequestUrgency
+                                            .Medium => ("bg-warning text-dark",
+                                                "🟡 Medium"),
+                                        _ => ("bg-success", "🟢 Low")
+                                    };
+                            }
+                            <span class="badge @urgCss">
+                                @urgLabel
+                            </span>
+                        </div>
+
+                        @* Title *@
+                        <h5 class="card-title">@req.Title</h5>
+
+                        @* Description excerpt *@
                         <p class="card-text text-muted small">
                             @(req.Description.Length > 120
                                 ? req.Description[..120] + "..."
                                 : req.Description)
                         </p>
+
+                        @* Meta info *@
                         <p class="text-muted small mb-0">
-                            By: @req.Requester?.FullName
-                            · @req.CreatedAt.ToString("dd MMM yyyy")
+                            By: <strong>
+                            @req.Requester?.FullName
+                        </strong>
+                        · @req.CreatedAt.ToString("dd MMM yyyy")
+                    </p>
+
+                    @if (req.PreferredDate.HasValue)
+                    {
+                        <p class="text-muted small mb-0">
+                            Preferred:
+                            @req.PreferredDate.Value
+                            .ToString("dd MMM yyyy")
                         </p>
-                    </div>
-                    <div class="card-footer bg-white border-0 pb-3">
-                        <a asp-controller="HelpRequest"
+                    }
+
+                    @* Expiry warning *@
+                    @if (req.ExpiresAt < DateTime.UtcNow.AddDays(3))
+                    {
+                        <p class="text-danger small mb-0 fw-bold">
+                            ⏳ Expires:
+                            @req.ExpiresAt.ToString("dd MMM yyyy")
+                        </p>
+                    }
+
+                </div>
+
+                <div class="card-footer bg-white border-0 pb-3">
+                    <a asp-controller="HelpRequest"
                            asp-action="Details"
                            asp-route-id="@req.HelpRequestId"
-                           class="btn btn-outline-primary btn-sm">View Details</a>
+                           class="btn btn-outline-primary btn-sm">
+                        View Details
+                    </a>
 
-                        @if (User.Identity!.IsAuthenticated)
-                        {
-                            <form asp-controller="HelpRequest"
-                                  asp-action="Claim" method="post"
-                                  class="d-inline ms-2">
-                                <input type="hidden" name="id"
-                                       value="@req.HelpRequestId" />
-                                <button type="submit"
-                                        class="btn btn-primary btn-sm">Claim</button>
-                            </form>
-                        }
-                        else
-                        {
-                            <a asp-controller="Account" asp-action="Login"
-                               class="btn btn-outline-secondary btn-sm ms-2">
-                                Login to Help
-                            </a>
-                        }
-                    </div>
+                    @if (User.Identity!.IsAuthenticated
+                         && userId != req.RequesterId)
+                    {
+                        <a asp-controller="HelpRequest"
+                               asp-action="Details"
+                               asp-route-id="@req.HelpRequestId"
+                               class="btn btn-primary btn-sm ms-2">
+                            Apply to Help
+                        </a>
+                    }
+                    else if (!User.Identity!.IsAuthenticated)
+                    {
+                        <a asp-controller="Account"
+                               asp-action="Login"
+                               class="btn btn-outline-secondary
+                            btn-sm ms-2">
+                            Login to Help
+                        </a>
+                    }
                 </div>
             </div>
-        }
-    </div>
+        </div>
+    }
+</div>
 }

@@ -21,7 +21,13 @@ namespace HelpingHand.ViewModels
         [Display(Name = "Preferred Date (optional)")]
         public DateTime? PreferredDate { get; set; }
 
+        [Display(Name = "Urgency Level")]
+        public RequestUrgency Urgency { get; set; } = RequestUrgency.Medium;
+
         public IEnumerable<Category> Categories { get; set; }
             = Enumerable.Empty<Category>();
+
+        // If created from a template
+        public int? TemplateId { get; set; }
     }
 }

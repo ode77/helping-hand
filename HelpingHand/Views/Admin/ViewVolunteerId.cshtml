@@ -1,0 +1,73 @@
+﻿@{
+    ViewData["Title"] = "Volunteer ID";
+    var application = ViewBag.Application as
+        HelpingHand.Models.VolunteerApplication;
+}
+
+<a asp-action="Index"
+       class="btn btn-outline-secondary btn-sm mb-3">
+    ← Back to Admin Panel
+</a>
+
+<h3 style="color:#1F3864;">Volunteer ID Verification</h3>
+<p class="text-muted">
+    Volunteer: <strong>@ViewBag.VolunteerName</strong>
+</p>
+
+<div class="card shadow-sm">
+    <div class="card-body p-4">
+
+        @if (!string.IsNullOrEmpty(ViewBag.IdPath as string))
+        {
+            <div class="mb-4">
+                <h5>Submitted ID Document</h5>
+                @{
+                    var idPath = ViewBag.IdPath as string ?? "";
+                    var isImage = idPath.EndsWith(".jpg") ||
+                                  idPath.EndsWith(".jpeg") ||
+                                  idPath.EndsWith(".png") ||
+                                  idPath.EndsWith(".gif");
+                }
+                @if (isImage)
+                {
+                    <img src="@idPath"
+                         alt="Volunteer ID"
+                         class="img-fluid border rounded"
+                         style="max-width:500px;" />
+                }
+                else
+                {
+                    <a href="@idPath" target="_blank"
+                           class="btn btn-outline-primary">
+                        View ID Document
+                    </a>
+                }
+            </div>
+
+            @if (application != null && !application.IdVerified)
+            {
+                <form asp-action="VerifyId" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="applicationId"
+                           value="@application.VolunteerApplicationId" />
+                    <button type="submit"
+                            class="btn btn-success">
+                        Verify This ID
+                    </button>
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-success">
+                    ✅ ID has been verified.
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-warning">
+                No ID document was submitted with this application.
+            </div>
+        }
+    </div>
+</div>
