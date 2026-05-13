@@ -125,7 +125,7 @@ namespace HelpingHand.Controllers
             TempData["Success"] = "Claim approved. Volunteer assigned.";
             return RedirectToAction(nameof(Index));
         }
-        
+
 
         // Reject a pending claim — returns to Open
         [HttpPost]
