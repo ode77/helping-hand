@@ -1,4 +1,4 @@
-# 🤝 Helping Hand - Community Volunteer Platform
+#  Helping Hand - Community Volunteer Platform
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat&logo=.net)](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 [![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-8.0-512BD4?style=flat&logo=asp.net)](https://dotnet.microsoft.com/en-us/apps/aspnet)
@@ -9,7 +9,7 @@
 
 > A comprehensive **ASP.NET 8 Razor Pages** web application that connects community members who need help with volunteers willing to provide assistance. Built with modern technologies, containerized for easy deployment, and designed for scalability.
 
-## 📋 Table of Contents
+##  Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
@@ -27,7 +27,7 @@
 
 ---
 
-## 🎯 Overview
+##  Overview
 
 **Helping Hand** is a community-driven platform that:
 - Connects **requesters** (people who need help) with **volunteers** (people willing to help)
@@ -50,7 +50,7 @@ Helping Hand offers:
 
 ---
 
-## ✨ Features
+##  Features
 
 ### 👥 User Roles & Access Control
 
@@ -82,10 +82,10 @@ Helping Hand offers:
 - ✅ Manage volunteer verification
 - ✅ Handle disputes and reviews
 
-### 🎨 Core Features
+###  Core Features
 
 #### **Help Request Management**
-- 📝 **Create Requests** - Post what you need help with
+-  **Create Requests** - Post what you need help with
   - Title and detailed description
   - Category selection (Grocery, Elderly Care, Medical, etc.)
   - Urgency level (Low, Medium, High)
@@ -97,7 +97,7 @@ Helping Hand offers:
   - Search by keyword
   - Sort by date, urgency, or rating
 
-- ✋ **Request Status Tracking**
+-  **Request Status Tracking**
   - **Open** - Awaiting volunteers
   - **Pending** - Volunteer applied, awaiting confirmation
   - **Assigned** - Volunteer confirmed
@@ -106,42 +106,42 @@ Helping Hand offers:
   - **Closed** - Both parties confirmed completion
 
 #### **Volunteer Management**
-- 📋 **Volunteer Applications**
+-  **Volunteer Applications**
   - Apply to requests
   - Track application status
   - Communicate with requesters
 
-- ⭐ **Rating System**
-  - Rate volunteers/requesters on 5-star scale
+-  **Rating System**
+  - Rate volunteers/requesters on a 5-star scale
   - Leave written reviews
   - Build reputation score
   - View historical ratings
 
-- 📸 **ID Verification**
+-  **ID Verification**
   - Upload government-issued ID
   - Admin verification process
   - Trust badge display
 
 #### **Notifications & Communication**
-- 🔔 **Real-time Notifications**
+-  **Real-time Notifications**
   - New volunteer applications
   - Status updates
   - Messages from other users
   - Expiration warnings
 
-- 💬 **In-app Comments**
+-  **In-app Comments**
   - Discuss details on each request
   - Track conversation history
   - Moderated by admins
 
 #### **Dashboard & Profile**
-- 📊 **Personal Dashboard**
+-  **Personal Dashboard**
   - Active requests
   - Volunteer history
   - Pending applications
   - Ratings and reviews
 
-- 👤 **Profile Management**
+-  **Profile Management**
   - Personal information
   - Contact details
   - Emergency contact
@@ -149,25 +149,25 @@ Helping Hand offers:
   - Profile photo (future enhancement)
 
 #### **Admin Features**
-- 🛡️ **User Management**
+-  **User Management**
   - View all users
   - Manage user roles
   - Lock/unlock accounts
   - Monitor suspicious activity
 
-- 📊 **Analytics & Reports**
+-  **Analytics & Reports**
   - Active requests count
   - Volunteer participation metrics
   - Category popularity
   - User growth trends
 
-- 🏷️ **Category Management**
+-  **Category Management**
   - Create/edit/delete request categories
   - Set category descriptions
 
 ---
 
-## 🛠 Technology Stack
+##  Technology Stack
 
 ### **Backend**
 - **Language**: C# 12 (.NET 8)
@@ -216,7 +216,7 @@ Bootstrap Icons (via CDN)
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - .NET 8 SDK or Visual Studio 2026
@@ -238,8 +238,8 @@ docker-compose up -d
 open http://localhost:5000
 ```
 
-**⏰ First startup**: ~50 seconds (SQL Server initialization)  
-**⏱️ Subsequent startups**: ~10 seconds
+** First startup**: ~50 seconds (SQL Server initialization)  
+** Subsequent startups**: ~10 seconds
 
 ### Option 2: Local Development
 
@@ -293,16 +293,16 @@ open http://localhost:5000
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 helping-hand/
 │
-├─ 📄 README.md                          (This file - project documentation)
-├─ 📄 ARTIFACTS.md                       (Complete artifacts file)
-├─ 📄 HelpingHand.sln                    (Solution file)
+├─  README.md                          (This file - project documentation)
+├─  ARTIFACTS.md                       (Complete artifacts file)
+├─  HelpingHand.sln                    (Solution file)
 │
-├─ 🐳 Docker Files
+├─  Docker Files
 │  ├─ Dockerfile                         (Application container build)
 │  ├─ docker-compose.yml                 (Multi-container orchestration)
 │  └─ .dockerignore                      (Build optimization)
@@ -316,22 +316,22 @@ helping-hand/
 │  ├─ DOCKER_VERIFICATION_CHECKLIST.md   (Checklist)
 │  └─ DOCKER_MANIFEST.md                 (Summary)
 │
-├─ 📚 VS Code Integration
+├─  VS Code Integration
 │  ├─ .devcontainer/
 │  │  └─ devcontainer.json               (Dev Containers config)
 │  └─ .vscode/
 │     └─ tasks.json                      (Build tasks)
 │
-├─ 📊 HelpingHand/ (Main Application)
+├─  HelpingHand/ (Main Application)
 │  │
-│  ├─ 🎯 Controllers/
+│  ├─  Controllers/
 │  │  ├─ AccountController.cs            (Authentication & registration)
 │  │  ├─ HomeController.cs               (Landing page & redirect)
 │  │  ├─ HelpRequestController.cs        (Request CRUD operations)
 │  │  ├─ NotificationController.cs       (Notification management)
 │  │  └─ AdminController.cs              (Admin functions)
 │  │
-│  ├─ 📄 Pages/ (Razor Pages)
+│  ├─  Pages/ (Razor Pages)
 │  │  ├─ Account/
 │  │  │  ├─ Login.cshtml
 │  │  │  ├─ Register.cshtml
@@ -358,7 +358,7 @@ helping-hand/
 │  │     ├─ Applications.cshtml          (Volunteer applications)
 │  │     └─ Statistics.cshtml            (Volunteer stats)
 │  │
-│  ├─ 🗂️ Models/ (Data Models)
+│  ├─  Models/ (Data Models)
 │  │  ├─ ApplicationUser.cs              (Extended Identity user)
 │  │  ├─ HelpRequest.cs                  (Help request entity)
 │  │  ├─ VolunteerApplication.cs         (Volunteer application)
@@ -371,10 +371,10 @@ helping-hand/
 │  │  ├─ RequestUrgency.cs               (Urgency enum)
 │  │  └─ ErrorViewModel.cs               (Error display)
 │  │
-│  ├─ 💾 Data/
+│  ├─  Data/
 │  │  └─ ApplicationDbContext.cs          (EF Core DbContext)
 │  │
-│  ├─ 🔌 Repositories/ (Data Access)
+│  ├─  Repositories/ (Data Access)
 │  │  ├─ IHelpRequestRepository.cs        (Request interface)
 │  │  ├─ HelpRequestRepository.cs         (Request implementation)
 │  │  ├─ ICategoryRepository.cs           (Category interface)
@@ -390,7 +390,7 @@ helping-hand/
 │  │  ├─ ITemplateRepository.cs           (Template interface)
 │  │  └─ TemplateRepository.cs            (Template implementation)
 │  │
-│  ├─ 🎨 ViewModels/
+│  ├─  ViewModels/
 │  │  ├─ CreateHelpRequestViewModel.cs    (Create request form)
 │  │  ├─ RequestDetailsViewModel.cs       (Request with comments)
 │  │  ├─ DashboardViewModel.cs            (Dashboard data)
@@ -404,18 +404,18 @@ helping-hand/
 │  │  ├─ RegisterViewModel.cs             (Registration form)
 │  │  └─ RequestCardViewModel.cs          (Request list item)
 │  │
-│  ├─ 🗄️ Migrations/ (EF Core)
+│  ├─  Migrations/ (EF Core)
 │  │  ├─ 20260429135354_InitialCreate.cs
 │  │  ├─ 20260512144547_AddUserContactDetailsAndPendingStatus.cs
 │  │  ├─ 20260512152928_AddAllNewFeatures.cs
 │  │  └─ 20260512165205_AddVolunteerDoneStatusAndIdVerification.cs
 │  │
-│  ├─ 📋 appsettings.json                 (Configuration)
-│  ├─ 📋 appsettings.Development.json     (Dev configuration)
+│  ├─  appsettings.json                 (Configuration)
+│  ├─  appsettings.Development.json     (Dev configuration)
 │  ├─ HelpingHand.csproj                  (Project file)
 │  └─ Program.cs                          (Startup & DI configuration)
 │
-├─ 🌐 wwwroot/ (Static Files)
+├─  wwwroot/ (Static Files)
 │  ├─ css/
 │  │  └─ site.css                         (Custom styles)
 │  ├─ js/
@@ -424,16 +424,16 @@ helping-hand/
 │  └─ uploads/
 │     └─ ids/                             (ID document storage)
 │
-├─ 📝 .gitignore                          (Git ignore rules)
-├─ 📝 .env.example                        (Environment variable template)
-└─ 📝 Configuration Files
+├─  .gitignore                          (Git ignore rules)
+├─  .env.example                        (Environment variable template)
+└─  Configuration Files
    ├─ appsettings.json
    └─ appsettings.Development.json
 ```
 
 ---
 
-## 🔑 Core Concepts
+##  Core Concepts
 
 ### Database-First vs Code-First Approach
 This project uses **Code-First** with Entity Framework Core:
@@ -540,7 +540,7 @@ POST    /Admin/Category/Delete/{id}     - Delete category
 
 #### **ApplicationUser** (Extends IdentityUser)
 ```csharp
-public class ApplicationUser : IdentityUser
+public class ApplicationUser: IdentityUser
 {
     public string FullName { get; set; }
     public string PhoneNumber { get; set; }
@@ -684,7 +684,7 @@ HelpRequest
 
 ---
 
-## 👨‍💻 Development Guide
+##  Development Guide
 
 ### Prerequisites for Development
 
@@ -849,7 +849,7 @@ Password: TestPassword123!
 
 ---
 
-## 🐳 Docker Setup
+##  Docker Setup
 
 ### Using Docker (Recommended)
 
@@ -885,7 +885,7 @@ docker-compose down
 
 ---
 
-## 📚 Additional Resources
+##  Additional Resources
 
 ### Documentation Files
 - **README_DOCKER.md** - Docker setup guide
@@ -902,7 +902,7 @@ docker-compose down
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Please:
 
@@ -921,13 +921,13 @@ Contributions are welcome! Please:
 
 ---
 
-## 📋 License
+##  License
 
 This project is licensed under the **MIT License** - see LICENSE file for details.
 
 ---
 
-## 💬 Support & Contact
+##  Support & Contact
 
 ### Getting Help
 1. **Check Documentation** - See `README_DOCKER.md` and guides
@@ -936,14 +936,14 @@ This project is licensed under the **MIT License** - see LICENSE file for detail
 4. **Email** - Contact project maintainers
 
 ### Community
-- 👥 **GitHub Discussions** - Join community conversations
-- 🐛 **Bug Reports** - Help improve the project
-- 💡 **Feature Requests** - Suggest new functionality
-- ⭐ **Star the Project** - Show your support!
+-  **GitHub Discussions** - Join community conversations
+-  **Bug Reports** - Help improve the project
+-  **Feature Requests** - Suggest new functionality
+-  **Star the Project** - Show your support!
 
 ---
 
-## 🎯 Roadmap
+##  Roadmap
 
 ### Phase 1 (Current) ✅
 - ✅ Core request management
@@ -972,7 +972,7 @@ This project is licensed under the **MIT License** - see LICENSE file for detail
 
 ---
 
-## 📊 Project Statistics
+##  Project Statistics
 
 | Metric | Value |
 |--------|-------|
@@ -989,7 +989,7 @@ This project is licensed under the **MIT License** - see LICENSE file for detail
 
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - Built with [ASP.NET Core](https://dotnet.microsoft.com/)
 - Styled with [Bootstrap](https://getbootstrap.com/)
@@ -998,7 +998,7 @@ This project is licensed under the **MIT License** - see LICENSE file for detail
 
 ---
 
-## 📝 Version History
+##  Version History
 
 - **v1.0.0** (Current)
   - Initial release
@@ -1010,7 +1010,7 @@ This project is licensed under the **MIT License** - see LICENSE file for detail
 
 <div align="center">
 
-**Made with ❤️ for the community**
+**Made with Love for the community**
 
 [⬆ Back to Top](#-helping-hand---community-volunteer-platform)
 
