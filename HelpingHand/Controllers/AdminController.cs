@@ -15,16 +15,19 @@ namespace HelpingHand.Controllers
         private readonly INotificationRepository _notifRepo;
         private readonly IVolunteerApplicationRepository _appRepo;
 
-        [Authorize(Roles = "Admin")]
-        public class AdminControllerIndex : Controller
+        public AdminController(
+            IHelpRequestRepository requestRepo,
+            UserManager<ApplicationUser> userManager,
+            INotificationRepository notifRepo,
+            IVolunteerApplicationRepository appRepo)
         {
-            private readonly IHelpRequestRepository _requestRepo;
-            private readonly UserManager<ApplicationUser> _userManager;
-            private readonly INotificationRepository _notifRepo;
-            private readonly IVolunteerApplicationRepository _appRepo;
+            _requestRepo = requestRepo;
+            _userManager = userManager;
+            _notifRepo = notifRepo;
+            _appRepo = appRepo;
         }
 
-        // Main dashboard — all requests
+        // Main dashboard
         public async Task<IActionResult> Index()
         {
             var all = await _requestRepo.GetAllAsync();
@@ -32,9 +35,11 @@ namespace HelpingHand.Controllers
         }
 
         // View full requester contact details
-        public async Task<IActionResult> RequesterDetails(int requestId)
+        public async Task<IActionResult> RequesterDetails(
+            int requestId)
         {
-            var request = await _requestRepo.GetByIdAsync(requestId);
+            var request = await _requestRepo
+                .GetByIdAsync(requestId);
             if (request == null) return NotFound();
 
             var requester = await _userManager
@@ -46,11 +51,14 @@ namespace HelpingHand.Controllers
                 Id = requester.Id,
                 FullName = requester.FullName,
                 Email = requester.Email ?? string.Empty,
-                PhoneNumber = requester.PhoneNumber ?? string.Empty,
+                PhoneNumber = requester.PhoneNumber
+                    ?? string.Empty,
                 Address = requester.Address,
                 Availability = requester.Availability,
-                EmergencyContactName = requester.EmergencyContactName,
-                EmergencyContactPhone = requester.EmergencyContactPhone,
+                EmergencyContactName =
+                    requester.EmergencyContactName,
+                EmergencyContactPhone =
+                    requester.EmergencyContactPhone,
             };
 
             ViewBag.RequestId = requestId;
@@ -58,7 +66,70 @@ namespace HelpingHand.Controllers
             return View(model);
         }
 
-        // View volunteer ID for a pending application
+        // Approve a pending claim
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveClaim(int id)
+        {
+            var request = await _requestRepo.GetByIdAsync(id);
+            if (request == null) return NotFound();
+
+            if (request.Status != RequestStatus.PendingApproval)
+            {
+                TempData["Error"] =
+                    "This request is not pending approval.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            request.Status = RequestStatus.Assigned;
+            await _requestRepo.UpdateAsync(request);
+            await _requestRepo.SaveChangesAsync();
+
+            // Notify volunteer
+            if (request.VolunteerId != null)
+            {
+                await _notifRepo.AddAsync(new Notification
+                {
+                    UserId = request.VolunteerId,
+                    Message = $"Your claim for '{request.Title}' " +
+                              "has been approved. You are now assigned!",
+                    CreatedAt = DateTime.UtcNow,
+                    RelatedRequestId = request.HelpRequestId
+                });
+                await _notifRepo.SaveChangesAsync();
+            }
+
+            TempData["Success"] =
+                "Claim approved. Volunteer assigned.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Reject a pending claim
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectClaim(int id)
+        {
+            var request = await _requestRepo.GetByIdAsync(id);
+            if (request == null) return NotFound();
+
+            if (request.Status != RequestStatus.PendingApproval)
+            {
+                TempData["Error"] =
+                    "This request is not pending approval.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            request.Status = RequestStatus.Open;
+            request.VolunteerId = null;
+            await _requestRepo.UpdateAsync(request);
+            await _requestRepo.SaveChangesAsync();
+
+            TempData["Success"] =
+                "Claim rejected. Request returned to Open.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // View volunteer ID
         public async Task<IActionResult> ViewVolunteerId(
             int applicationId)
         {
@@ -74,10 +145,11 @@ namespace HelpingHand.Controllers
             return View();
         }
 
-        // Admin verifies the ID
+        // Verify volunteer ID
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> VerifyId(int applicationId)
+        public async Task<IActionResult> VerifyId(
+            int applicationId)
         {
             var application = await _appRepo
                 .GetByIdAsync(applicationId);
@@ -91,73 +163,12 @@ namespace HelpingHand.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Approve a pending claim
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ApproveClaim(int id)
-        {
-            var request = await _requestRepo.GetByIdAsync(id);
-            if (request == null) return NotFound();
-
-            if (request.Status != RequestStatus.PendingApproval)
-            {
-                TempData["Error"] = "This request is not pending approval.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            request.Status = RequestStatus.Assigned;
-            await _requestRepo.UpdateAsync(request);
-            await _requestRepo.SaveChangesAsync();
-
-            // Notify volunteer
-            if (request.VolunteerId != null)
-            {
-                await _notifRepo.AddAsync(new Models.Notification
-                {
-                    UserId = request.VolunteerId,
-                    Message = $"Your claim for '{request.Title}' has been approved by admin. You are now assigned!",
-                    CreatedAt = DateTime.UtcNow,
-                    RelatedRequestId = request.HelpRequestId
-                });
-                await _notifRepo.SaveChangesAsync();
-            }
-
-            TempData["Success"] = "Claim approved. Volunteer assigned.";
-            return RedirectToAction(nameof(Index));
-        }
-
-
-        // Reject a pending claim — returns to Open
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RejectClaim(int id)
-        {
-            var request = await _requestRepo.GetByIdAsync(id);
-            if (request == null) return NotFound();
-
-            if (request.Status != RequestStatus.PendingApproval)
-            {
-                TempData["Error"] =
-                    "This request is not pending approval.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            // Clear volunteer and return to Open
-            request.Status = RequestStatus.Open;
-            request.VolunteerId = null;
-
-            await _requestRepo.UpdateAsync(request);
-            await _requestRepo.SaveChangesAsync();
-
-            TempData["Success"] =
-                "Claim rejected. Request returned to Open.";
-            return RedirectToAction(nameof(Index));
-        }
-
         // Manually assign a volunteer
-        public async Task<IActionResult> AssignVolunteer(int requestId)
+        public async Task<IActionResult> AssignVolunteer(
+            int requestId)
         {
-            var request = await _requestRepo.GetByIdAsync(requestId);
+            var request = await _requestRepo
+                .GetByIdAsync(requestId);
             if (request == null) return NotFound();
 
             var users = _userManager.Users
@@ -175,7 +186,8 @@ namespace HelpingHand.Controllers
         public async Task<IActionResult> AssignVolunteer(
             int requestId, string volunteerId)
         {
-            var request = await _requestRepo.GetByIdAsync(requestId);
+            var request = await _requestRepo
+                .GetByIdAsync(requestId);
             if (request == null) return NotFound();
 
             request.VolunteerId = volunteerId;
@@ -226,7 +238,7 @@ namespace HelpingHand.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // All users with contact info and activity
+        // All users with contact info
         public async Task<IActionResult> ManageUsers()
         {
             var users = _userManager.Users.ToList();
@@ -234,7 +246,8 @@ namespace HelpingHand.Controllers
 
             foreach (var user in users)
             {
-                var roles = await _userManager.GetRolesAsync(user);
+                var roles = await _userManager
+                    .GetRolesAsync(user);
                 var posted = await _requestRepo
                     .GetByRequesterIdAsync(user.Id);
                 var claimed = await _requestRepo
@@ -245,16 +258,19 @@ namespace HelpingHand.Controllers
                     Id = user.Id,
                     FullName = user.FullName,
                     Email = user.Email ?? string.Empty,
-                    PhoneNumber = user.PhoneNumber ?? string.Empty,
+                    PhoneNumber = user.PhoneNumber
+                        ?? string.Empty,
                     Address = user.Address,
                     Availability = user.Availability,
-                    EmergencyContactName = user.EmergencyContactName,
-                    EmergencyContactPhone = user.EmergencyContactPhone,
+                    EmergencyContactName =
+                        user.EmergencyContactName,
+                    EmergencyContactPhone =
+                        user.EmergencyContactPhone,
                     Role = roles.FirstOrDefault() ?? "User",
                     TotalRequestsPosted = posted.Count(),
                     TotalRequestsClaimed = claimed.Count(),
-                    TotalCompleted = claimed
-                        .Count(r => r.Status == RequestStatus.Completed)
+                    TotalCompleted = claimed.Count(
+                        r => r.Status == RequestStatus.Completed)
                 });
             }
 
@@ -264,24 +280,27 @@ namespace HelpingHand.Controllers
         // Toggle admin role
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleAdmin(string userId)
+        public async Task<IActionResult> ToggleAdmin(
+            string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return NotFound();
 
             if (await _userManager.IsInRoleAsync(user, "Admin"))
             {
-                await _userManager.RemoveFromRoleAsync(user, "Admin");
+                await _userManager.RemoveFromRoleAsync(
+                    user, "Admin");
                 await _userManager.AddToRoleAsync(user, "User");
                 TempData["Success"] =
-                    $"{user.FullName} has been removed from Admin role.";
+                    $"{user.FullName} removed from Admin role.";
             }
             else
             {
-                await _userManager.RemoveFromRoleAsync(user, "User");
+                await _userManager.RemoveFromRoleAsync(
+                    user, "User");
                 await _userManager.AddToRoleAsync(user, "Admin");
                 TempData["Success"] =
-                    $"{user.FullName} has been made an Admin.";
+                    $"{user.FullName} is now an Admin.";
             }
 
             return RedirectToAction(nameof(ManageUsers));

@@ -1,0 +1,51 @@
+# Build outputs
+bin/
+obj/
+*.dll
+*.exe
+*.so
+*.dylib
+
+# IDE
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.user
+*.suo
+.idea/
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# Documentation
+*.md
+docs/
+
+# Node modules (if any frontend build)
+node_modules/
+npm-debug.log*
+
+# NuGet
+.nuget/
+*.nupkg
+*.snupkg
+
+# Test results
+TestResults/
+.coverage
+
+# Database
+*.mdf
+*.ldf
+*.db
+*.sqlite

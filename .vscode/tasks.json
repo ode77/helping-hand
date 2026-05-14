@@ -1,0 +1,75 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Docker: Build and Start",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "--build"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Docker: Start (without rebuild)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "group": "build"
+    },
+    {
+      "label": "Docker: Stop",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["down"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "group": "build"
+    },
+    {
+      "label": "Docker: Logs",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f"],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "group": "build"
+    },
+    {
+      "label": "Docker: Rebuild database (EF migrations)",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["exec", "web", "dotnet", "ef", "database", "update"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "group": "build"
+    },
+    {
+      "label": "Docker: Run tests",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["exec", "web", "dotnet", "test"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "group": "test"
+    }
+  ]
+}

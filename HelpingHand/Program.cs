@@ -66,7 +66,22 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features
 // ── Build the app — everything above is service registration ──────────────────
 var app = builder.Build();
 
-// ── 5. Seed roles ─────────────────────────────────────────────────────────────
+// ── 5. Apply database migrations ──────────────────────────────────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider
+        .GetRequiredService<ApplicationDbContext>();
+    try
+    {
+        await context.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database migration failed: {ex.Message}");
+    }
+}
+
+// ── 6. Seed roles ─────────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider

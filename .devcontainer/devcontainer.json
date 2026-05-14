@@ -1,0 +1,66 @@
+{
+  "name": "Helping Hand - .NET 8 Razor Pages",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "web",
+  "workspaceFolder": "/app",
+
+  // Features to install
+  "features": {
+    "ghcr.io/devcontainers/features/dotnet:latest": {},
+    "ghcr.io/devcontainers/features/git:latest": {}
+  },
+
+  // VS Code extensions to install
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-dotnettools.csharp-dev-kit",
+        "ms-mssql.mssql",
+        "ms-vscode.makefile-tools",
+        "eamodio.gitlens",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "omnisharp.enableEditorConfigSupport": true,
+        "omnisharp.enableRoslynAnalyzers": true,
+        "omnisharp.organizeImportsOnFormat": true,
+        "[csharp]": {
+          "editor.defaultFormatter": "ms-dotnettools.csharp",
+          "editor.formatOnSave": true,
+          "editor.rulers": [100, 120]
+        },
+        "explorer.excludeGitIgnore": true,
+        "editor.formatOnSave": true
+      }
+    }
+  },
+
+  // Port forwarding
+  "forwardPorts": [5000, 1433],
+  "portsAttributes": {
+    "5000": {
+      "label": "Application",
+      "onAutoForward": "notify"
+    },
+    "1433": {
+      "label": "SQL Server",
+      "onAutoForward": "silent"
+    }
+  },
+
+  // Environment file
+  "remoteEnv": {
+    "ASPNETCORE_ENVIRONMENT": "Development"
+  },
+
+  // Post-create setup
+  "postCreateCommand": "dotnet tool install -g dotnet-ef && dotnet restore && dotnet build",
+
+  // Mounts - handled by docker-compose
+  "mounts": [],
+
+  // Run commands
+  "remoteUser": "root"
+}
