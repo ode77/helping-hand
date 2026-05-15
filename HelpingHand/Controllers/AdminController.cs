@@ -42,8 +42,7 @@ namespace HelpingHand.Controllers
                 .GetByIdAsync(requestId);
             if (request == null) return NotFound();
 
-            var requester = await _userManager
-                .FindByIdAsync(request.RequesterId);
+            var requester = await _userManager.FindByIdAsync(request.RequesterId);
             if (requester == null) return NotFound();
 
             var model = new AdminUserViewModel
@@ -133,15 +132,12 @@ namespace HelpingHand.Controllers
         public async Task<IActionResult> ViewVolunteerId(
             int applicationId)
         {
-            var application = await _appRepo
-                .GetByIdAsync(applicationId);
+            var application = await _appRepo.GetByIdAsync(applicationId);
             if (application == null) return NotFound();
 
             ViewBag.Application = application;
-            ViewBag.VolunteerName =
-                application.Volunteer?.FullName ?? "Volunteer";
+            ViewBag.VolunteerName = application.Volunteer?.FullName ?? "Volunteer";
             ViewBag.IdPath = application.IdDocumentPath;
-
             return View();
         }
 
@@ -151,15 +147,13 @@ namespace HelpingHand.Controllers
         public async Task<IActionResult> VerifyId(
             int applicationId)
         {
-            var application = await _appRepo
-                .GetByIdAsync(applicationId);
+            var application = await _appRepo.GetByIdAsync(applicationId);
             if (application == null) return NotFound();
 
             application.IdVerified = true;
             await _appRepo.SaveChangesAsync();
 
-            TempData["Success"] =
-                "ID verified. You can now approve the claim.";
+            TempData["Success"] = "ID verified. You can now approve the claim.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -181,10 +175,10 @@ namespace HelpingHand.Controllers
             return View();
         }
 
+        // POST: /Admin/AssignVolunteer
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AssignVolunteer(
-            int requestId, string volunteerId)
+        public async Task<IActionResult> AssignVolunteer(int requestId, string volunteerId)
         {
             var request = await _requestRepo
                 .GetByIdAsync(requestId);
@@ -196,12 +190,11 @@ namespace HelpingHand.Controllers
             await _requestRepo.UpdateAsync(request);
             await _requestRepo.SaveChangesAsync();
 
-            TempData["Success"] =
-                "Volunteer assigned successfully.";
+            TempData["Success"] = "Volunteer assigned successfully.";
             return RedirectToAction(nameof(Index));
         }
 
-        // Edit any request
+        // GET: /Admin/EditRequest/5
         public async Task<IActionResult> EditRequest(int id)
         {
             var request = await _requestRepo.GetByIdAsync(id);
@@ -209,10 +202,10 @@ namespace HelpingHand.Controllers
             return View(request);
         }
 
+        // POST: /Admin/EditRequest/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditRequest(
-            int id, string title, string description)
+        public async Task<IActionResult> EditRequest(int id, string title, string description)
         {
             var request = await _requestRepo.GetByIdAsync(id);
             if (request == null) return NotFound();
@@ -227,13 +220,14 @@ namespace HelpingHand.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Delete request
+        // POST: /Admin/DeleteRequest/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteRequest(int id)
         {
             await _requestRepo.DeleteAsync(id);
             await _requestRepo.SaveChangesAsync();
+
             TempData["Success"] = "Request deleted.";
             return RedirectToAction(nameof(Index));
         }
@@ -277,7 +271,7 @@ namespace HelpingHand.Controllers
             return View(models);
         }
 
-        // Toggle admin role
+        // POST: /Admin/ToggleAdmin
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleAdmin(

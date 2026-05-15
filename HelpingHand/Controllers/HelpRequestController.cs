@@ -1,76 +1,86 @@
-﻿using HelpingHand.Models;
+﻿using System.Security.Claims;
+using HelpingHand.Models;
 using HelpingHand.Repositories;
 using HelpingHand.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace HelpingHand.Controllers
 {
+    [Authorize]
     public class HelpRequestController : Controller
     {
+        // ── Dependencies ──────────────────────────────────────────────────────
         private readonly IHelpRequestRepository _requestRepo;
         private readonly ICategoryRepository _categoryRepo;
-        private readonly IVolunteerApplicationRepository _appRepo;
+        private readonly IVolunteerApplicationRepository _applicationRepo;
         private readonly INotificationRepository _notifRepo;
-        private readonly ICommentRepository _commentRepo;
         private readonly IRatingRepository _ratingRepo;
+        private readonly ICommentRepository _commentRepo;
         private readonly ITemplateRepository _templateRepo;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IWebHostEnvironment _env;
 
+        // ── Constructor ───────────────────────────────────────────────────────
         public HelpRequestController(
             IHelpRequestRepository requestRepo,
             ICategoryRepository categoryRepo,
-            IVolunteerApplicationRepository appRepo,
+            IVolunteerApplicationRepository applicationRepo,
             INotificationRepository notifRepo,
-            ICommentRepository commentRepo,
             IRatingRepository ratingRepo,
+            ICommentRepository commentRepo,
             ITemplateRepository templateRepo,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IWebHostEnvironment env)
         {
             _requestRepo = requestRepo;
             _categoryRepo = categoryRepo;
-            _appRepo = appRepo;
+            _applicationRepo = applicationRepo;
             _notifRepo = notifRepo;
-            _commentRepo = commentRepo;
             _ratingRepo = ratingRepo;
+            _commentRepo = commentRepo;
             _templateRepo = templateRepo;
             _userManager = userManager;
+            _env = env;
         }
 
-        // GET: Create — optionally pre-fill from template
-        [Authorize]
-        public async Task<IActionResult> Create(int? templateId = null)
+        // ═════════════════════════════════════════════════════════════════════
+        // SECTION 1 — CREATE REQUEST
+        // ═════════════════════════════════════════════════════════════════════
+
+        // GET: /HelpRequest/Create
+        public async Task<IActionResult> Create(int? templateId)
         {
             var model = new CreateHelpRequestViewModel
             {
                 Categories = await _categoryRepo.GetAllAsync()
             };
 
+            // Pre-fill from a saved template if templateId is supplied
             if (templateId.HasValue)
             {
-                var template = await _templateRepo
-                    .GetByIdAsync(templateId.Value);
-                if (template != null)
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                var template = await _templateRepo.GetByIdAsync(templateId.Value);
+
+                if (template != null && template.OwnerId == userId)
                 {
                     model.Title = template.Title;
                     model.Description = template.Description;
                     model.CategoryId = template.CategoryId;
                     model.Urgency = template.Urgency;
                     model.TemplateId = templateId;
+                    ViewBag.FromTemplate = true;
                 }
             }
 
             return View(model);
         }
 
-        // POST: Create
+        // POST: /HelpRequest/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize]
-        public async Task<IActionResult> Create(
-            CreateHelpRequestViewModel model)
+        public async Task<IActionResult> Create(CreateHelpRequestViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -83,11 +93,10 @@ namespace HelpingHand.Controllers
                 Title = model.Title,
                 Description = model.Description,
                 CategoryId = model.CategoryId,
-                PreferredDate = model.PreferredDate,
                 Urgency = model.Urgency,
+                PreferredDate = model.PreferredDate,
                 Status = RequestStatus.Open,
-                RequesterId = User.FindFirstValue(
-                    ClaimTypes.NameIdentifier)!,
+                RequesterId = User.FindFirstValue(ClaimTypes.NameIdentifier)!,
                 CreatedAt = DateTime.UtcNow,
                 ExpiresAt = DateTime.UtcNow.AddDays(14)
             };
@@ -95,348 +104,136 @@ namespace HelpingHand.Controllers
             await _requestRepo.AddAsync(request);
             await _requestRepo.SaveChangesAsync();
 
-            TempData["Success"] =
-                "Your request has been posted to the Help Board.";
+            TempData["Success"] = "Your request has been posted to the Help Board.";
             return RedirectToAction("Board", "Home");
         }
 
-        // GET: Details
+        // ═════════════════════════════════════════════════════════════════════
+        // SECTION 2 — DETAILS
+        // ═════════════════════════════════════════════════════════════════════
+
+        // GET: /HelpRequest/Details/5
+        [AllowAnonymous]
         public async Task<IActionResult> Details(int id)
         {
             var request = await _requestRepo.GetByIdAsync(id);
             if (request == null) return NotFound();
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var comments = await _commentRepo.GetByRequestIdAsync(id);
-            var applications = await _appRepo.GetByRequestIdAsync(id);
-            var ratings = await _ratingRepo
-                .GetByVolunteerIdAsync(request.VolunteerId ?? "");
 
-            bool alreadyApplied = applications
-                .Any(a => a.VolunteerId == userId);
-            bool alreadyRated = userId != null &&
+            // Build the applications list and check if current user already applied
+            var applications = request.Applications ?? new List<VolunteerApplication>();
+            var alreadyApplied = userId != null &&
+                applications.Any(a => a.VolunteerId == userId);
+
+            // Check if already rated
+            var alreadyRated = userId != null &&
                 await _ratingRepo.ExistsAsync(id, userId);
 
-            double avgRating = ratings.Any()
-                ? ratings.Average(r => r.Stars) : 0;
+            // Average rating from the ratings collection
+            var ratings = request.Ratings ?? new List<VolunteerRating>();
+            var avgRating = ratings.Any() ? ratings.Average(r => r.Stars) : 0.0;
+            var ratingCount = ratings.Count();
 
-            var model = new RequestDetailsViewModel
+            var vm = new RequestDetailsViewModel
             {
                 Request = request,
                 Applications = applications,
-                Comments = comments,
+                Comments = request.Comments ?? new List<RequestComment>(),
                 AlreadyApplied = alreadyApplied,
                 AlreadyRated = alreadyRated,
                 AverageRating = avgRating,
-                RatingCount = ratings.Count()
+                RatingCount = ratingCount
             };
 
+            return View(vm);
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // SECTION 3 — EDIT
+        // ═════════════════════════════════════════════════════════════════════
+
+        // GET: /HelpRequest/Edit/5
+        public async Task<IActionResult> Edit(int id)
+        {
+            var request = await _requestRepo.GetByIdAsync(id);
+            if (request == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (request.RequesterId != userId && !User.IsInRole("Admin"))
+                return Forbid();
+
+            if (request.Status != RequestStatus.Open &&
+                request.Status != RequestStatus.PendingApproval)
+            {
+                TempData["Error"] = "Only open or pending requests can be edited.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            var model = new CreateHelpRequestViewModel
+            {
+                Title = request.Title,
+                Description = request.Description,
+                CategoryId = request.CategoryId,
+                Urgency = request.Urgency,
+                PreferredDate = request.PreferredDate,
+                Categories = await _categoryRepo.GetAllAsync()
+            };
+
+            ViewBag.RequestId = id;
             return View(model);
         }
 
-        // POST: Apply as volunteer with ID upload
+        // POST: /HelpRequest/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize]
-        public async Task<IActionResult> Apply(
-            VolunteerApplicationViewModel model,
-            IWebHostEnvironment env)
+        public async Task<IActionResult> Edit(int id, CreateHelpRequestViewModel model)
         {
             if (!ModelState.IsValid)
-                return RedirectToAction(nameof(Details),
-                    new { id = model.HelpRequestId });
-
-            var request = await _requestRepo
-                .GetByIdAsync(model.HelpRequestId);
-            if (request == null) return NotFound();
-
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier)!;
-
-            if (request.RequesterId == userId)
             {
-                TempData["Error"] =
-                    "You cannot apply for your own request.";
-                return RedirectToAction(nameof(Details),
-                    new { id = model.HelpRequestId });
+                model.Categories = await _categoryRepo.GetAllAsync();
+                ViewBag.RequestId = id;
+                return View(model);
             }
 
-            // Check not already applied
-            var existing = await _appRepo
-                .GetByRequestIdAsync(model.HelpRequestId);
-            if (existing.Any(a => a.VolunteerId == userId))
-            {
-                TempData["Error"] =
-                    "You have already applied for this request.";
-                return RedirectToAction(nameof(Details),
-                    new { id = model.HelpRequestId });
-            }
-
-            // Handle ID document upload
-            string idPath = string.Empty;
-            if (model.IdDocument != null &&
-                model.IdDocument.Length > 0)
-            {
-                var uploadsFolder = Path.Combine(
-                    env.WebRootPath, "uploads", "ids");
-
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                var ext = Path.GetExtension(
-                    model.IdDocument.FileName);
-                var fileName = $"{userId}_{Guid.NewGuid()}{ext}";
-                var filePath = Path.Combine(uploadsFolder, fileName);
-
-                using (var stream = new FileStream(
-                    filePath, FileMode.Create))
-                {
-                    await model.IdDocument.CopyToAsync(stream);
-                }
-
-                idPath = $"/uploads/ids/{fileName}";
-            }
-
-            var application = new VolunteerApplication
-            {
-                HelpRequestId = model.HelpRequestId,
-                VolunteerId = userId,
-                Message = model.Message,
-                AppliedAt = DateTime.UtcNow,
-                IdDocumentPath = idPath
-            };
-
-            await _appRepo.AddAsync(application);
-            await _appRepo.SaveChangesAsync();
-
-            // Notify requester
-            await _notifRepo.AddAsync(new Notification
-            {
-                UserId = request.RequesterId,
-                Message = $"Someone has applied to help with your request: {request.Title}",
-                CreatedAt = DateTime.UtcNow,
-                RelatedRequestId = request.HelpRequestId
-            });
-            await _notifRepo.SaveChangesAsync();
-
-            TempData["Success"] =
-                "Your application has been submitted with your ID. " +
-                "The requester will review applications.";
-            return RedirectToAction("Dashboard", "Account");
-        }
-
-        // POST: Requester accepts a volunteer application
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize]
-        public async Task<IActionResult> AcceptApplication(
-            int applicationId)
-        {
-            var application = await _appRepo.GetByIdAsync(applicationId);
-            if (application == null) return NotFound();
-
-            var request = await _requestRepo
-                .GetByIdAsync(application.HelpRequestId);
-            if (request == null) return NotFound();
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (request.RequesterId != userId)
-                return Forbid();
-
-            application.IsAccepted = true;
-            request.VolunteerId = application.VolunteerId;
-            request.Status = RequestStatus.PendingApproval;
-
-            await _appRepo.SaveChangesAsync();
-            await _requestRepo.UpdateAsync(request);
-            await _requestRepo.SaveChangesAsync();
-
-            // Notify volunteer
-            await _notifRepo.AddAsync(new Notification
-            {
-                UserId = application.VolunteerId,
-                Message = $"Your application for '{request.Title}' was accepted and is awaiting admin approval.",
-                CreatedAt = DateTime.UtcNow,
-                RelatedRequestId = request.HelpRequestId
-            });
-            await _notifRepo.SaveChangesAsync();
-
-            TempData["Success"] =
-                "Volunteer accepted. Awaiting admin approval.";
-            return RedirectToAction(nameof(Details),
-                new { id = request.HelpRequestId });
-        }
-
-        // POST: Volunteer marks their side as done
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize]
-        public async Task<IActionResult> VolunteerMarkDone(int id)
-        {
             var request = await _requestRepo.GetByIdAsync(id);
             if (request == null) return NotFound();
 
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
-
-            if (request.VolunteerId != userId)
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (request.RequesterId != userId && !User.IsInRole("Admin"))
                 return Forbid();
 
-            if (request.Status != RequestStatus.Assigned)
-            {
-                TempData["Error"] =
-                    "This request is not in an assigned state.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            request.VolunteerConfirmedDone = true;
-            request.Status = RequestStatus.VolunteerDone;
+            request.Title = model.Title;
+            request.Description = model.Description;
+            request.CategoryId = model.CategoryId;
+            request.Urgency = model.Urgency;
+            request.PreferredDate = model.PreferredDate;
 
             await _requestRepo.UpdateAsync(request);
             await _requestRepo.SaveChangesAsync();
 
-            // Notify requester to confirm
-            await _notifRepo.AddAsync(new Notification
-            {
-                UserId = request.RequesterId,
-                Message = $"Your volunteer says they have completed '{request.Title}'. Please confirm and leave feedback.",
-                CreatedAt = DateTime.UtcNow,
-                RelatedRequestId = request.HelpRequestId
-            });
-            await _notifRepo.SaveChangesAsync();
-
-            TempData["Success"] =
-                "You have marked this as done. " +
-                "Waiting for the requester to confirm.";
-            return RedirectToAction("Dashboard", "Account");
+            TempData["Success"] = "Request updated.";
+            return RedirectToAction(nameof(Details), new { id });
         }
 
-        // GET: Requester confirms and leaves feedback
-        [Authorize]
-        public async Task<IActionResult> ConfirmComplete(int id)
-        {
-            var request = await _requestRepo.GetByIdAsync(id);
-            if (request == null) return NotFound();
+        // ═════════════════════════════════════════════════════════════════════
+        // SECTION 4 — CANCEL
+        // ═════════════════════════════════════════════════════════════════════
 
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
-
-            if (request.RequesterId != userId)
-                return Forbid();
-
-            if (request.Status != RequestStatus.VolunteerDone)
-            {
-                TempData["Error"] =
-                    "This request is not ready for confirmation yet.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            var volunteer = request.VolunteerId != null
-                ? await _userManager.FindByIdAsync(request.VolunteerId)
-                : null;
-
-            var model = new RequesterConfirmViewModel
-            {
-                HelpRequestId = id,
-                RequestTitle = request.Title,
-                VolunteerName = volunteer?.FullName ?? "Volunteer"
-            };
-
-            return View(model);
-        }
-
-        // POST: Requester confirms completion with feedback
+        // POST: /HelpRequest/Cancel/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize]
-        public async Task<IActionResult> ConfirmComplete(
-            RequesterConfirmViewModel model)
-        {
-            if (!ModelState.IsValid) return View(model);
-
-            var request = await _requestRepo
-                .GetByIdAsync(model.HelpRequestId);
-            if (request == null) return NotFound();
-
-            var userId = User.FindFirstValue(
-                ClaimTypes.NameIdentifier)!;
-
-            if (request.RequesterId != userId)
-                return Forbid();
-
-            // Save feedback and rating
-            request.RequesterConfirmedDone = true;
-            request.RequesterFeedback = model.Feedback;
-            request.Status = RequestStatus.Completed;
-
-            await _requestRepo.UpdateAsync(request);
-
-            // Save star rating
-            if (request.VolunteerId != null)
-            {
-                var alreadyRated = await _ratingRepo
-                    .ExistsAsync(model.HelpRequestId, userId);
-
-                if (!alreadyRated)
-                {
-                    await _ratingRepo.AddAsync(new VolunteerRating
-                    {
-                        HelpRequestId = model.HelpRequestId,
-                        VolunteerId = request.VolunteerId,
-                        RequesterId = userId,
-                        Stars = model.Stars,
-                        Comment = model.Feedback,
-                        RatedAt = DateTime.UtcNow
-                    });
-                }
-
-                // Increment volunteer completion count
-                var volunteer = await _userManager
-                    .FindByIdAsync(request.VolunteerId);
-                if (volunteer != null)
-                {
-                    volunteer.CompletedHelpCount++;
-                    await _userManager.UpdateAsync(volunteer);
-                }
-
-                // Notify volunteer
-                await _notifRepo.AddAsync(new Notification
-                {
-                    UserId = request.VolunteerId,
-                    Message = $"'{request.Title}' has been confirmed as complete! " +
-                              $"The requester rated you {model.Stars} stars.",
-                    CreatedAt = DateTime.UtcNow,
-                    RelatedRequestId = request.HelpRequestId
-                });
-                await _notifRepo.SaveChangesAsync();
-            }
-
-            await _requestRepo.SaveChangesAsync();
-
-            TempData["Success"] =
-                "Thank you for confirming! The request has been fully completed.";
-            return RedirectToAction("Dashboard", "Account");
-        }
-
-        // POST: Cancel request
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize]
         public async Task<IActionResult> Cancel(int id)
         {
             var request = await _requestRepo.GetByIdAsync(id);
             if (request == null) return NotFound();
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (request.RequesterId != userId)
-                return Forbid();
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (request.RequesterId != userId) return Forbid();
 
             if (request.Status != RequestStatus.Open)
             {
-                TempData["Error"] =
-                    "Only open requests can be cancelled.";
+                TempData["Error"] = "Only open requests can be cancelled.";
                 return RedirectToAction(nameof(Details), new { id });
             }
 
@@ -448,150 +245,541 @@ namespace HelpingHand.Controllers
             return RedirectToAction("Dashboard", "Account");
         }
 
-        // POST: Add comment
+        // ═════════════════════════════════════════════════════════════════════
+        // SECTION 5 — VOLUNTEER APPLICATION (Apply + Accept)
+        // ═════════════════════════════════════════════════════════════════════
+
+        // GET: /HelpRequest/Apply/5
+        public async Task<IActionResult> Apply(int id)
+        {
+            var request = await _requestRepo.GetByIdAsync(id);
+            if (request == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            if (request.Status != RequestStatus.Open)
+            {
+                TempData["Error"] = "This request is no longer accepting applications.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            if (request.RequesterId == userId)
+            {
+                TempData["Error"] = "You cannot volunteer for your own request.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            // Check if user already applied
+            var existingApplications = await _applicationRepo.GetByRequestIdAsync(id);
+            if (existingApplications.Any(a => a.VolunteerId == userId))
+            {
+                TempData["Error"] = "You have already applied for this request.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            return View(new VolunteerApplicationViewModel
+            {
+                HelpRequestId = id,
+                RequestTitle = request.Title
+            });
+        }
+
+        // POST: /HelpRequest/Apply
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize]
-        public async Task<IActionResult> AddComment(
-            int requestId, string content)
+        public async Task<IActionResult> Apply(VolunteerApplicationViewModel model)
+        {
+            var request = await _requestRepo.GetByIdAsync(model.HelpRequestId);
+            if (request == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            // Re-check all guards on POST
+            if (request.Status != RequestStatus.Open)
+            {
+                TempData["Error"] = "This request is no longer accepting applications.";
+                return RedirectToAction(nameof(Details), new { id = model.HelpRequestId });
+            }
+
+            if (request.RequesterId == userId)
+            {
+                TempData["Error"] = "You cannot volunteer for your own request.";
+                return RedirectToAction(nameof(Details), new { id = model.HelpRequestId });
+            }
+
+            // ID document is required — validate before ModelState check
+            if (model.IdDocument == null || model.IdDocument.Length == 0)
+            {
+                ModelState.AddModelError("IdDocument", "Please upload a photo of your ID.");
+            }
+            else
+            {
+                var allowed = new[] { "image/jpeg", "image/png", "image/gif", "application/pdf" };
+                if (!allowed.Contains(model.IdDocument.ContentType.ToLower()))
+                    ModelState.AddModelError("IdDocument",
+                        "Only JPEG, PNG, GIF, or PDF files are accepted.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                model.RequestTitle = request.Title;
+                return View(model);
+            }
+
+            // ── Save ID document to wwwroot/uploads/ids/ ───────────────────
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "ids");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var ext = Path.GetExtension(model.IdDocument!.FileName);
+            var fileName = $"{userId}_{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+                await model.IdDocument.CopyToAsync(stream);
+
+            var idPath = $"/uploads/ids/{fileName}";
+
+            // ── Save application ───────────────────────────────────────────
+            var application = new VolunteerApplication
+            {
+                HelpRequestId = model.HelpRequestId,
+                VolunteerId = userId,
+                Message = model.Message,
+                IdDocumentPath = idPath,
+                AppliedAt = DateTime.UtcNow,
+                IsAccepted = false,
+                IdVerified = false
+            };
+
+            await _applicationRepo.AddAsync(application);
+            await _applicationRepo.SaveChangesAsync();
+
+            // ── Notify requester ───────────────────────────────────────────
+            var volunteer = await _userManager.FindByIdAsync(userId);
+            await Notify(
+                request.RequesterId,
+                $"{volunteer?.FullName ?? "A volunteer"} has applied for your request: \"{request.Title}\".",
+                request.HelpRequestId);
+
+            TempData["Success"] = "Application submitted! The requester will review it shortly.";
+            return RedirectToAction(nameof(Details), new { id = model.HelpRequestId });
+        }
+
+        // POST: /HelpRequest/AcceptApplication
+        // Requester selects a volunteer → PendingApproval (admin must verify ID)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AcceptApplication(int applicationId)
+        {
+            var application = await _applicationRepo.GetByIdAsync(applicationId);
+            if (application == null) return NotFound();
+
+            var request = await _requestRepo.GetByIdAsync(application.HelpRequestId);
+            if (request == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            if (request.RequesterId != userId) return Forbid();
+
+            if (request.Status != RequestStatus.Open)
+            {
+                TempData["Error"] = "This request is no longer open.";
+                return RedirectToAction(nameof(Details), new { id = request.HelpRequestId });
+            }
+
+            // Mark accepted on the application record
+            application.IsAccepted = true;
+            request.Status = RequestStatus.PendingApproval;
+            request.VolunteerId = application.VolunteerId;
+
+            await _requestRepo.UpdateAsync(request);
+            await _requestRepo.SaveChangesAsync();
+
+            var requester = await _userManager.FindByIdAsync(userId);
+            await Notify(
+                application.VolunteerId,
+                $"{requester?.FullName ?? "The requester"} accepted your application for \"{request.Title}\". Awaiting admin approval.",
+                request.HelpRequestId);
+
+            TempData["Success"] = "Application accepted. An admin will verify the ID before assigning.";
+            return RedirectToAction(nameof(Details), new { id = request.HelpRequestId });
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // SECTION 6 — DUAL CONFIRMATION
+        // ═════════════════════════════════════════════════════════════════════
+
+        // POST: /HelpRequest/VolunteerMarkDone/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VolunteerMarkDone(int id)
+        {
+            var request = await _requestRepo.GetByIdAsync(id);
+            if (request == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+            if (request.Status != RequestStatus.Assigned)
+            {
+                TempData["Error"] = "This request is not in an assigned state.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            if (request.VolunteerId != userId) return Forbid();
+
+            request.Status = RequestStatus.VolunteerDone;
+            request.VolunteerConfirmedDone = true;
+
+            await _requestRepo.UpdateAsync(request);
+            await _requestRepo.SaveChangesAsync();
+
+            var volunteer = await _userManager.FindByIdAsync(userId);
+            await Notify(
+                request.RequesterId,
+                $"{volunteer?.FullName ?? "Your volunteer"} marked \"{request.Title}\" as done. Please confirm to complete the request.",
+                request.HelpRequestId);
+
+            TempData["Success"] = "Done! The requester has been notified to confirm.";
+            return RedirectToAction("Dashboard", "Account");
+        }
+
+        // GET: /HelpRequest/RequesterConfirm/5
+        public async Task<IActionResult> RequesterConfirm(int id)
+        {
+            var request = await _requestRepo.GetByIdAsync(id);
+            if (request == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (request.RequesterId != userId) return Forbid();
+
+            if (request.Status != RequestStatus.VolunteerDone)
+            {
+                TempData["Error"] = "This request cannot be confirmed at this stage.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            var volunteer = request.Volunteer != null
+                ? request.Volunteer
+                : await _userManager.FindByIdAsync(request.VolunteerId ?? "");
+
+            return View(new RequesterConfirmViewModel
+            {
+                HelpRequestId = id,
+                RequestTitle = request.Title,
+                VolunteerName = volunteer?.FullName ?? "the volunteer"
+            });
+        }
+
+        // POST: /HelpRequest/RequesterConfirm
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RequesterConfirm(RequesterConfirmViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var request = await _requestRepo.GetByIdAsync(model.HelpRequestId);
+            if (request == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (request.RequesterId != userId) return Forbid();
+
+            if (request.Status != RequestStatus.VolunteerDone)
+            {
+                TempData["Error"] = "This request cannot be confirmed at this stage.";
+                return RedirectToAction(nameof(Details), new { id = model.HelpRequestId });
+            }
+
+            // ── Complete the request ───────────────────────────────────────
+            request.Status = RequestStatus.Completed;
+            request.RequesterConfirmedDone = true;
+            request.RequesterFeedback = model.Feedback;
+
+            await _requestRepo.UpdateAsync(request);
+            await _requestRepo.SaveChangesAsync();
+
+            // ── Save the star rating ──────────────────────────────────────
+            if (!string.IsNullOrEmpty(request.VolunteerId))
+            {
+                var rating = new VolunteerRating
+                {
+                    HelpRequestId = model.HelpRequestId,
+                    VolunteerId = request.VolunteerId,
+                    RequesterId = userId,
+                    Stars = model.Stars,
+                    Comment = model.Feedback,
+                    RatedAt = DateTime.UtcNow
+                };
+                await _ratingRepo.AddAsync(rating);
+                await _ratingRepo.SaveChangesAsync();
+
+                // ── Update volunteer badge count ───────────────────────────
+                var volunteer = await _userManager.FindByIdAsync(request.VolunteerId);
+                if (volunteer != null)
+                {
+                    volunteer.CompletedHelpCount++;
+                    await _userManager.UpdateAsync(volunteer);
+                }
+
+                // ── Notify volunteer ───────────────────────────────────────
+                var requester = await _userManager.FindByIdAsync(userId);
+                await Notify(
+                    request.VolunteerId,
+                    $"{requester?.FullName ?? "The requester"} confirmed \"{request.Title}\" as complete and gave you {model.Stars} star{(model.Stars != 1 ? "s" : "")}.",
+                    request.HelpRequestId);
+            }
+
+            TempData["Success"] = "Thank you! The request is now marked as complete.";
+            return RedirectToAction("Dashboard", "Account");
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // SECTION 7 — COMMENTS
+        // ═════════════════════════════════════════════════════════════════════
+
+        // POST: /HelpRequest/AddComment
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddComment(int helpRequestId, string content)
         {
             if (string.IsNullOrWhiteSpace(content))
             {
                 TempData["Error"] = "Comment cannot be empty.";
-                return RedirectToAction(nameof(Details),
-                    new { id = requestId });
+                return RedirectToAction(nameof(Details), new { id = helpRequestId });
             }
 
-            var request = await _requestRepo.GetByIdAsync(requestId);
+            var request = await _requestRepo.GetByIdAsync(helpRequestId);
             if (request == null) return NotFound();
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            await _commentRepo.AddAsync(new RequestComment
+            // Only the requester and assigned volunteer may comment
+            if (request.RequesterId != userId && request.VolunteerId != userId)
             {
-                HelpRequestId = requestId,
+                TempData["Error"] = "Only the requester and volunteer can leave comments.";
+                return RedirectToAction(nameof(Details), new { id = helpRequestId });
+            }
+
+            var comment = new RequestComment
+            {
+                HelpRequestId = helpRequestId,
                 AuthorId = userId,
                 Content = content.Trim(),
                 PostedAt = DateTime.UtcNow
-            });
+            };
+
+            await _commentRepo.AddAsync(comment);
             await _commentRepo.SaveChangesAsync();
 
             // Notify the other party
-            string notifyUserId = userId == request.RequesterId
-                ? request.VolunteerId ?? ""
+            var recipientId = request.RequesterId == userId
+                ? request.VolunteerId
                 : request.RequesterId;
 
-            if (!string.IsNullOrEmpty(notifyUserId))
+            if (!string.IsNullOrEmpty(recipientId))
             {
-                await _notifRepo.AddAsync(new Notification
-                {
-                    UserId = notifyUserId,
-                    Message = $"New comment on request: {request.Title}",
-                    CreatedAt = DateTime.UtcNow,
-                    RelatedRequestId = requestId
-                });
-                await _notifRepo.SaveChangesAsync();
+                var author = await _userManager.FindByIdAsync(userId);
+                await Notify(
+                    recipientId,
+                    $"{author?.FullName ?? "Someone"} left a comment on \"{request.Title}\".",
+                    helpRequestId);
             }
 
-            return RedirectToAction(nameof(Details),
-                new { id = requestId });
+            return RedirectToAction(nameof(Details), new { id = helpRequestId });
         }
 
-        // GET: Rate volunteer
-        [Authorize]
-        public async Task<IActionResult> Rate(int id)
-        {
-            var request = await _requestRepo.GetByIdAsync(id);
-            if (request == null) return NotFound();
+        // ═════════════════════════════════════════════════════════════════════
+        // SECTION 8 — TEMPLATES
+        // ═════════════════════════════════════════════════════════════════════
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (request.RequesterId != userId) return Forbid();
-
-            var volunteer = request.VolunteerId != null
-                ? await _userManager.FindByIdAsync(request.VolunteerId)
-                : null;
-
-            var model = new RatingViewModel
-            {
-                HelpRequestId = id,
-                VolunteerName = volunteer?.FullName ?? "Volunteer"
-            };
-
-            return View(model);
-        }
-
-        // POST: Rate volunteer
+        // POST: /HelpRequest/SaveAsTemplate/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize]
-        public async Task<IActionResult> Rate(RatingViewModel model)
-        {
-            if (!ModelState.IsValid) return View(model);
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-
-            if (await _ratingRepo.ExistsAsync(
-                model.HelpRequestId, userId))
-            {
-                TempData["Error"] = "You have already rated this volunteer.";
-                return RedirectToAction("Dashboard", "Account");
-            }
-
-            var request = await _requestRepo
-                .GetByIdAsync(model.HelpRequestId);
-            if (request?.VolunteerId == null) return NotFound();
-
-            await _ratingRepo.AddAsync(new VolunteerRating
-            {
-                HelpRequestId = model.HelpRequestId,
-                VolunteerId = request.VolunteerId,
-                RequesterId = userId,
-                Stars = model.Stars,
-                Comment = model.Comment,
-                RatedAt = DateTime.UtcNow
-            });
-            await _ratingRepo.SaveChangesAsync();
-
-            TempData["Success"] = "Thank you for your rating!";
-            return RedirectToAction("Dashboard", "Account");
-        }
-
-        // GET: Save as template
-        [Authorize]
-        public async Task<IActionResult> SaveTemplate(int id)
+        public async Task<IActionResult> SaveAsTemplate(int id)
         {
             var request = await _requestRepo.GetByIdAsync(id);
             if (request == null) return NotFound();
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             if (request.RequesterId != userId) return Forbid();
 
-            await _templateRepo.AddAsync(new RequestTemplate
+            var template = new RequestTemplate
             {
-                OwnerId = userId!,
+                OwnerId = userId,
                 Title = request.Title,
                 Description = request.Description,
                 CategoryId = request.CategoryId,
                 Urgency = request.Urgency,
                 CreatedAt = DateTime.UtcNow
-            });
+            };
+
+            await _templateRepo.AddAsync(template);
             await _templateRepo.SaveChangesAsync();
 
-            TempData["Success"] =
-                "Request saved as a template. You can reuse it from your dashboard.";
+            TempData["Success"] = "Saved as template. You can reuse it from your Dashboard.";
             return RedirectToAction(nameof(Details), new { id });
         }
 
-        // POST: Delete template
+        // POST: /HelpRequest/DeleteTemplate/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize]
         public async Task<IActionResult> DeleteTemplate(int templateId)
         {
+            var template = await _templateRepo.GetByIdAsync(templateId);
+            if (template == null) return NotFound();
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            if (template.OwnerId != userId) return Forbid();
+
             await _templateRepo.DeleteAsync(templateId);
             await _templateRepo.SaveChangesAsync();
+
             TempData["Success"] = "Template deleted.";
             return RedirectToAction("Dashboard", "Account");
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // SECTION 9 — ADMIN ACTIONS (approve / reject / verify ID / assign)
+        // These act on HelpRequest lifecycle so they live here, gated by Admin role
+        // ═════════════════════════════════════════════════════════════════════
+
+        // POST: /HelpRequest/AdminVerifyId
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AdminVerifyId(int applicationId)
+        {
+            var application = await _applicationRepo.GetByIdAsync(applicationId);
+            if (application == null) return NotFound();
+
+            application.IdVerified = true;
+            await _applicationRepo.SaveChangesAsync();
+
+            TempData["Success"] = "ID verified. You can now approve the request.";
+            return RedirectToAction("Index", "Admin");
+        }
+
+        // POST: /HelpRequest/AdminApprove/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AdminApprove(int id)
+        {
+            var request = await _requestRepo.GetByIdAsync(id);
+            if (request == null) return NotFound();
+
+            if (request.Status != RequestStatus.PendingApproval)
+            {
+                TempData["Error"] = "Only pending approval requests can be approved.";
+                return RedirectToAction("Index", "Admin");
+            }
+
+            request.Status = RequestStatus.Assigned;
+            await _requestRepo.UpdateAsync(request);
+            await _requestRepo.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(request.VolunteerId))
+            {
+                await Notify(
+                    request.VolunteerId,
+                    $"Your application for \"{request.Title}\" has been approved. You can now view the requester's contact details.",
+                    request.HelpRequestId);
+            }
+
+            TempData["Success"] = "Request approved and volunteer assigned.";
+            return RedirectToAction("Index", "Admin");
+        }
+
+        // POST: /HelpRequest/AdminReject/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AdminReject(int id)
+        {
+            var request = await _requestRepo.GetByIdAsync(id);
+            if (request == null) return NotFound();
+
+            if (request.Status != RequestStatus.PendingApproval)
+            {
+                TempData["Error"] = "Only pending approval requests can be rejected.";
+                return RedirectToAction("Index", "Admin");
+            }
+
+            var rejectedVolunteerId = request.VolunteerId;
+            request.Status = RequestStatus.Open;
+            request.VolunteerId = null;
+
+            await _requestRepo.UpdateAsync(request);
+            await _requestRepo.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(rejectedVolunteerId))
+            {
+                await Notify(
+                    rejectedVolunteerId,
+                    $"Your application for \"{request.Title}\" was not approved. The request is now open for other volunteers.",
+                    request.HelpRequestId);
+            }
+
+            TempData["Success"] = "Application rejected. Request returned to Open.";
+            return RedirectToAction("Index", "Admin");
+        }
+
+        // POST: /HelpRequest/AdminManualAssign
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AdminManualAssign(int id, string volunteerId)
+        {
+            if (string.IsNullOrWhiteSpace(volunteerId))
+            {
+                TempData["Error"] = "Please select a volunteer.";
+                return RedirectToAction("Index", "Admin");
+            }
+
+            var request = await _requestRepo.GetByIdAsync(id);
+            if (request == null) return NotFound();
+
+            var volunteer = await _userManager.FindByIdAsync(volunteerId);
+            if (volunteer == null)
+            {
+                TempData["Error"] = "Selected user not found.";
+                return RedirectToAction("Index", "Admin");
+            }
+
+            if (request.RequesterId == volunteerId)
+            {
+                TempData["Error"] = "Cannot assign the requester as the volunteer.";
+                return RedirectToAction("Index", "Admin");
+            }
+
+            request.Status = RequestStatus.Assigned;
+            request.VolunteerId = volunteerId;
+
+            await _requestRepo.UpdateAsync(request);
+            await _requestRepo.SaveChangesAsync();
+
+            await Notify(
+                volunteerId,
+                $"An admin has assigned you to: \"{request.Title}\". Check the request details for contact information.",
+                request.HelpRequestId);
+
+            TempData["Success"] = $"{volunteer.FullName} has been manually assigned.";
+            return RedirectToAction("Index", "Admin");
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // PRIVATE HELPER — send a notification in one line
+        // ═════════════════════════════════════════════════════════════════════
+        private async Task Notify(string userId, string message, int relatedRequestId)
+        {
+            await _notifRepo.AddAsync(new Notification
+            {
+                UserId = userId,
+                Message = message,
+                CreatedAt = DateTime.UtcNow,
+                IsRead = false,
+                RelatedRequestId = relatedRequestId
+            });
+            await _notifRepo.SaveChangesAsync();
         }
     }
 }
