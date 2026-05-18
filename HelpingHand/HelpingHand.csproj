@@ -16,4 +16,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- Include GitHub workflow in the project so it appears in the IDE and is tracked by the project file -->
+  <ItemGroup>
+    <None Include=".github/workflows/ci.yml">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
