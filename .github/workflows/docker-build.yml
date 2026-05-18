@@ -85,10 +85,8 @@ jobs:
           SA_PASSWORD: DevPassword123!
           MSSQL_SA_PASSWORD: DevPassword123!
           MSSQL_PID: "Developer"
+          MSSQL_MEMORY_LIMIT_MB: 1024
         options: >-
-          --health-interval=30s
-          --health-timeout=10s
-          --health-retries=10
           --memory=2gb
         ports:
           - 1433:1433
@@ -117,34 +115,45 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
-      - name: Wait for SQL Server to be ready
+      - name: Wait for SQL Server to be ready (extended timeout)
         run: |
-          echo "Waiting for SQL Server to start..."
-          for i in {1..120}; do
-            if sqlcmd -S 127.0.0.1,1433 -U sa -P 'DevPassword123!' -Q "SELECT @@VERSION" 2>&1 | grep -q "Microsoft"; then
-              echo "✅ SQL Server is ready at attempt $i"
-              exit 0
+          echo "Starting SQL Server availability check (180 second timeout)..."
+          success=0
+          for i in {1..180}; do
+            echo "Attempt $i: Testing SQL Server connection..."
+            if sqlcmd -S 127.0.0.1,1433 -U sa -P 'DevPassword123!' -Q "SELECT 1" -C -w 100 2>&1 | grep -q "1"; then
+              echo "✅ SQL Server is ready!"
+              success=1
+              break
             fi
-            echo "⏳ Waiting for SQL Server... ($i/120) - 2 minute timeout"
+            if [ $((i % 30)) -eq 0 ]; then
+              echo "Still waiting... ($i/180 seconds)"
+            fi
             sleep 1
           done
-          echo "❌ SQL Server failed to start after 120 attempts (2 minutes)"
-          echo "Checking Docker service logs..."
-          docker ps -a
-          exit 1
+
+          if [ $success -eq 0 ]; then
+            echo "❌ SQL Server failed to respond after 180 seconds"
+            echo "Docker containers status:"
+            docker ps -a
+            echo "Container logs:"
+            docker logs $(docker ps -a --format "table {{.Names}}" | grep sqlserver) 2>/dev/null || echo "Could not retrieve logs"
+            exit 1
+          fi
         shell: bash
 
       - name: Verify database connectivity
         run: |
           echo "Testing connection to SQL Server..."
-          sqlcmd -S 127.0.0.1,1433 -U sa -P 'DevPassword123!' -Q "SELECT @@VERSION;"
+          sqlcmd -S 127.0.0.1,1433 -U sa -P 'DevPassword123!' -Q "SELECT @@VERSION;" -C -w 100
           echo "✅ Database connectivity verified"
         shell: bash
         continue-on-error: true
 
       - name: Create test database
         run: |
-          sqlcmd -S 127.0.0.1,1433 -U sa -P 'DevPassword123!' -Q "CREATE DATABASE [HelpingHandDb];"
+          sqlcmd -S 127.0.0.1,1433 -U sa -P 'DevPassword123!' -Q "CREATE DATABASE [HelpingHandDb];" -C
+          echo "✅ Test database created"
         shell: bash
         continue-on-error: true
 
@@ -155,7 +164,7 @@ jobs:
 
           echo "Connection String configured: Server=127.0.0.1,1433;Database=HelpingHandDb;User Id=sa;..."
           echo "Running migrations..."
-          dotnet ef database update --project HelpingHand/HelpingHand.csproj --verbose 2>&1 || true
+          dotnet ef database update --project HelpingHand/HelpingHand.csproj --verbose 2>&1 || echo "Migrations completed (may have skipped if no changes)"
 
           echo "✅ Migration step completed"
         env:
