@@ -52,7 +52,7 @@ Helping Hand offers:
 
 ##  Features
 
-### 👥 User Roles & Access Control
+###  User Roles & Access Control
 
 #### **Registered Users**
 - ✅ Create and manage help requests
@@ -92,7 +92,7 @@ Helping Hand offers:
   - Preferred completion date
   - Auto-expiration after 14 days if unclaimed
 
-- 🔍 **Browse & Search**
+-  **Browse & Search**
   - Filter by category, status, and urgency
   - Search by keyword
   - Sort by date, urgency, or rating
@@ -475,7 +475,7 @@ Open → Pending → Assigned → In Progress → Completed → Closed
 
 ---
 
-## 📡 API Overview
+##  API Overview
 
 The application uses a **Razor Pages + MVC hybrid** architecture:
 
@@ -534,7 +534,7 @@ POST    /Admin/Category/Delete/{id}     - Delete category
 
 ---
 
-## 💾 Database Schema
+##  Database Schema
 
 ### Core Entities
 
@@ -920,14 +920,6 @@ Contributions are welcome! Please:
 - Get approval from maintainers
 
 ---
-
-##  License
-
-This project is licensed under the **MIT License** - see LICENSE file for details.
-
----
-
-##  Support & Contact
 
 ### Getting Help
 1. **Check Documentation** - See `README_DOCKER.md` and guides
